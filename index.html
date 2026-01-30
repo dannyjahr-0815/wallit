@@ -1786,6 +1786,9 @@
                 }, 150);
                 
                 this.render();
+                
+                // 🔄 INITIAL SYNC CHECK: Prüfe ob Cloud-Daten neuer sind
+                setTimeout(() => this.checkForCloudUpdates(), 1000);
             }
 
             // 🚀 PERFORMANCE HELPER FUNKTIONEN
@@ -2624,6 +2627,7 @@ migrateData(fromVersion, toVersion) {
                     this.hasUnsavedChanges = false;
                     this.localLastModified = now;
                     this.cloudLastModified = now;
+                    this.saveData('lastModified', now);
                     
                     // Real-time Sync aktivieren falls noch nicht aktiv
                     if (!this.syncListener) {
@@ -2724,6 +2728,12 @@ migrateData(fromVersion, toVersion) {
                         this.saveData('settings', this.settings);
                         this.saveData('lastSync', this.lastSync);
                         
+                        // Speichere Cloud-Timestamp als lokalen Timestamp
+                        if (data.lastModified) {
+                            this.localLastModified = data.lastModified;
+                            this.saveData('lastModified', data.lastModified);
+                        }
+                        
                         // Real-time Sync aktivieren falls noch nicht aktiv
                         if (!this.syncListener) {
                             this.setupRealtimeSync();
@@ -2754,6 +2764,153 @@ migrateData(fromVersion, toVersion) {
             // ========================================
             // REAL-TIME SYNC & CONFLICT DETECTION
             // ========================================
+            
+            async checkForCloudUpdates() {
+                if (!window.firebaseReady || !window.firebaseDB) {
+                    console.log('⚠️ Firebase nicht bereit - keine Cloud-Prüfung');
+                    return;
+                }
+                
+                try {
+                    const docRef = window.firestoreDoc(window.firebaseDB, 'users', this.userId);
+                    const docSnap = await window.firestoreGetDoc(docRef);
+                    
+                    if (!docSnap.exists()) {
+                        console.log('ℹ️ Keine Cloud-Daten vorhanden');
+                        return;
+                    }
+                    
+                    const cloudData = docSnap.data();
+                    const cloudTimestamp = cloudData.lastModified || 0;
+                    
+                    // Speichere Cloud-Timestamp
+                    this.cloudLastModified = cloudTimestamp;
+                    
+                    // Wenn lokale Daten leer sind (neue Installation)
+                    const hasLocalData = this.ausgabenAll && Object.keys(this.ausgabenAll).length > 0;
+                    
+                    if (!hasLocalData) {
+                        // Keine lokalen Daten - frage ob laden
+                        this.showInitialLoadPrompt(cloudData);
+                        return;
+                    }
+                    
+                    // Vergleiche Timestamps
+                    const localTimestamp = this.loadData('lastModified', 0);
+                    
+                    if (cloudTimestamp > localTimestamp) {
+                        // Cloud ist neuer - Warnung anzeigen
+                        this.showOutdatedDataWarning(cloudData);
+                    } else {
+                        // Lokale Daten sind aktuell - aktiviere nur Listener
+                        this.setupRealtimeSync();
+                        console.log('✅ Lokale Daten sind aktuell');
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Fehler beim Cloud-Check:', error);
+                }
+            }
+            
+            showInitialLoadPrompt(cloudData) {
+                const notification = document.createElement('div');
+                notification.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+                notification.innerHTML = `
+                    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-slideDown">
+                        <div class="text-center mb-4">
+                            <div class="text-5xl mb-3">☁️</div>
+                            <h3 class="text-2xl font-bold text-gray-800 mb-2">Cloud-Daten gefunden!</h3>
+                            <p class="text-gray-600">
+                                Für diese User-ID existieren bereits Daten in der Cloud.
+                                Möchtest du sie laden?
+                            </p>
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="app.loadInitialCloudData()" 
+                                    class="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all">
+                                Ja, laden
+                            </button>
+                            <button onclick="app.dismissInitialPrompt()" 
+                                    class="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-all">
+                                Nein, lokal starten
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(notification);
+            }
+            
+            showOutdatedDataWarning(cloudData) {
+                const notification = document.createElement('div');
+                notification.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+                notification.innerHTML = `
+                    <div class="bg-orange-50 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-slideDown border-4 border-orange-500">
+                        <div class="text-center mb-4">
+                            <div class="text-5xl mb-3">⚠️</div>
+                            <h3 class="text-2xl font-bold text-orange-800 mb-2">Achtung: Veraltete Daten!</h3>
+                            <p class="text-orange-700 font-medium mb-2">
+                                Die Cloud hat neuere Daten als dein Gerät.
+                            </p>
+                            <p class="text-sm text-orange-600">
+                                Wenn du jetzt Änderungen machst, könnten Daten von anderen Usern überschrieben werden!
+                            </p>
+                        </div>
+                        <div class="bg-white rounded-lg p-3 mb-4 text-sm text-gray-700">
+                            <strong>Empfehlung:</strong> Lade zuerst die aktuellen Cloud-Daten, bevor du Änderungen machst.
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <button onclick="app.loadInitialCloudData()" 
+                                    class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all">
+                                ✓ Jetzt Cloud-Daten laden (empfohlen)
+                            </button>
+                            <button onclick="app.continueWithLocalData()" 
+                                    class="w-full bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-orange-600 transition-all">
+                                ⚠️ Trotzdem mit lokalen Daten weitermachen
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(notification);
+            }
+            
+            async loadInitialCloudData() {
+                // Schließe Prompt
+                document.querySelectorAll('.fixed.inset-0').forEach(n => n.remove());
+                
+                // Lade Cloud-Daten
+                await this.performLoad();
+                
+                // Aktiviere Real-time Sync
+                this.setupRealtimeSync();
+            }
+            
+            dismissInitialPrompt() {
+                // Schließe Prompt
+                document.querySelectorAll('.fixed.inset-0').forEach(n => n.remove());
+                
+                // Speichere lokalen Timestamp
+                this.localLastModified = Date.now();
+                this.saveData('lastModified', this.localLastModified);
+                
+                // Aktiviere Real-time Sync
+                this.setupRealtimeSync();
+                
+                console.log('✅ Mit lokalen Daten gestartet');
+            }
+            
+            continueWithLocalData() {
+                // Schließe Warning
+                document.querySelectorAll('.fixed.inset-0').forEach(n => n.remove());
+                
+                // Warnung: User will trotzdem mit alten Daten arbeiten
+                this.showModal('⚠️ Warnung', 
+                    'Du arbeitest jetzt mit veralteten lokalen Daten.\n\nWenn du speicherst, werden neuere Cloud-Daten überschrieben!\n\nBitte synchronisiere regelmäßig mit der Cloud.',
+                    [{ text: 'Verstanden', class: 'bg-orange-500 hover:bg-orange-600 text-white' }]
+                );
+                
+                // Aktiviere Real-time Sync trotzdem (für zukünftige Updates)
+                this.setupRealtimeSync();
+            }
             
             setupRealtimeSync() {
                 if (!window.firebaseReady || !window.firebaseDB) {
@@ -2937,6 +3094,10 @@ migrateData(fromVersion, toVersion) {
                 // Reset flags
                 this.hasUnsavedChanges = false;
                 this.localLastModified = Date.now();
+                if (cloudData.lastModified) {
+                    this.localLastModified = cloudData.lastModified;
+                    this.saveData('lastModified', cloudData.lastModified);
+                }
                 
                 // UI neu rendern
                 this.render();
