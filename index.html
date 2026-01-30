@@ -1233,8 +1233,8 @@
         .bottom-nav{
             position:fixed;
             left:0; right:0; bottom:0;
-            height:80px;
-            padding: 12px 8px calc(8px + env(safe-area-inset-bottom));
+            height:88px;
+            padding: 14px 8px calc(8px + env(safe-area-inset-bottom));
             display:flex;
             gap: 6px;
             justify-content:space-between;
@@ -1242,7 +1242,8 @@
             background: rgba(255,255,255,0.92);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(0,0,0,0.06);
+            border-top: 1.5px solid rgba(0,0,0,0.12);
+            box-shadow: 0 -1px 0 rgba(255,255,255,0.5);
             z-index: 999;
         }
         .bn-item{
@@ -1316,7 +1317,8 @@
         
         body.dark-mode .bottom-nav{
             background: rgba(17,24,39,0.95);
-            border-top: 1px solid rgba(255,255,255,0.08);
+            border-top: 1.5px solid rgba(255,255,255,0.15);
+            box-shadow: 0 -1px 0 rgba(255,255,255,0.05);
         }
         
         body.dark-mode .bn-item{ 
@@ -3262,7 +3264,7 @@ migrateData(fromVersion, toVersion) {
                 
                 // Kurze Bestätigung
                 const toast = document.createElement('div');
-                toast.className = 'fixed bottom-24 md:bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-auto z-50 animate-slideUp';
+                toast.className = 'fixed bottom-28 md:bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-auto z-50 animate-slideUp';
                 toast.innerHTML = `
                     <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3">
                         <div class="text-2xl">✅</div>
@@ -6249,7 +6251,7 @@ migrateData(fromVersion, toVersion) {
                 const app = document.getElementById('app');
                 app.innerHTML = `
                     <div class="min-h-screen" style="background: var(--bg-gradient-page);">
-                        <div class="max-w-7xl mx-auto p-4 md:p-6 pb-24 md:pb-6">
+                        <div class="max-w-7xl mx-auto p-4 md:p-6 pb-28 md:pb-6">
                             <div class="mb-6 text-center">
                                 <h1 class="text-4xl md:text-5xl font-extrabold mb-2 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent px-4 py-2" style="line-height: 1.3;">
                                     Wallit
