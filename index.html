@@ -18,7 +18,7 @@
     <script type="module">
         try {
             const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
-            const { getFirestore, doc, setDoc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            const { getFirestore, doc, setDoc, getDoc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
 
             const firebaseConfig = {
                 apiKey: "AIzaSyAmTH2L-ATcecbt6r18FZb3Pt8BxTyqK9M",
@@ -35,6 +35,7 @@
             window.firestoreDoc = doc;
             window.firestoreSetDoc = setDoc;
             window.firestoreGetDoc = getDoc;
+            window.firestoreOnSnapshot = onSnapshot;
             window.firebaseReady = true;
             console.log('✅ Firebase erfolgreich initialisiert');
         } catch (error) {
@@ -1446,6 +1447,39 @@
                 height: 50px;
             }
         }
+        
+        /* ==========================================
+           NOTIFICATION ANIMATIONS
+           ========================================== */
+        @keyframes slideDown {
+            from {
+                transform: translate(-50%, -100%);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, 0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .animate-slideDown {
+            animation: slideDown 0.3s ease-out forwards;
+        }
+        
+        .animate-slideUp {
+            animation: slideUp 0.3s ease-out forwards;
+        }
 </style>
 </head>
 <body>
@@ -1620,6 +1654,12 @@
                 };
                 this.renderQueue = [];
                 this.isRendering = false;
+                
+                // 🔄 REAL-TIME SYNC: Initialisieren
+                this.localLastModified = Date.now();
+                this.cloudLastModified = null;
+                this.syncListener = null;
+                this.hasUnsavedChanges = false;
                 
                 // Teste LocalStorage Verfügbarkeit
                 console.log('📦 Teste LocalStorage...');
@@ -2504,6 +2544,11 @@ migrateData(fromVersion, toVersion) {
                     if (key === 'ausgabenAll' || key === 'einkommenAll' || key === 'fixkosten' || key === 'zusatzeinkommenAll') {
                         this.invalidateCache();
                     }
+                    
+                    // 🔄 REAL-TIME SYNC: Markiere als geändert (außer userId und lastSync)
+                    if (key !== 'userId' && key !== 'lastSync' && key !== 'currentMonth') {
+                        this.markAsChanged();
+                    }
                 } catch (error) {
                     console.error(`❌ Fehler beim Speichern von ${key}:`, error);
                     if (key === 'userId') {
@@ -2547,6 +2592,7 @@ migrateData(fromVersion, toVersion) {
                 this.render();
                 
                 try {
+                    const now = Date.now();
                     const docRef = window.firestoreDoc(window.firebaseDB, 'users', this.userId);
                     await window.firestoreSetDoc(docRef, {
                         // Finanz-Daten
@@ -2569,11 +2615,21 @@ migrateData(fromVersion, toVersion) {
                         settings: this.settings,
                         
                         // Sync Info
-                        lastSync: new Date().toISOString()
+                        lastSync: new Date().toISOString(),
+                        lastModified: now
                     });
                     
                     this.lastSync = new Date().toISOString();
                     this.saveData('lastSync', this.lastSync);
+                    this.hasUnsavedChanges = false;
+                    this.localLastModified = now;
+                    this.cloudLastModified = now;
+                    
+                    // Real-time Sync aktivieren falls noch nicht aktiv
+                    if (!this.syncListener) {
+                        this.setupRealtimeSync();
+                    }
+                    
                     this.showModal('✅ Erfolgreich!', 'Daten wurden mit der Cloud synchronisiert!', 
                         [{ text: 'OK', class: 'bg-green-500 hover:bg-green-600 text-white' }]
                     );
@@ -2668,6 +2724,11 @@ migrateData(fromVersion, toVersion) {
                         this.saveData('settings', this.settings);
                         this.saveData('lastSync', this.lastSync);
                         
+                        // Real-time Sync aktivieren falls noch nicht aktiv
+                        if (!this.syncListener) {
+                            this.setupRealtimeSync();
+                        }
+                        
                         this.showModal('✅ Erfolgreich!', 
                             'Daten aus Cloud geladen!\n\nDeine lokalen Daten wurden durch die Cloud-Daten ersetzt.',
                             [{ text: 'OK', class: 'bg-green-500 hover:bg-green-600 text-white' }]
@@ -2688,6 +2749,209 @@ migrateData(fromVersion, toVersion) {
                     this.isSyncing = false;
                     this.render();
                 }
+            }
+            
+            // ========================================
+            // REAL-TIME SYNC & CONFLICT DETECTION
+            // ========================================
+            
+            setupRealtimeSync() {
+                if (!window.firebaseReady || !window.firebaseDB) {
+                    console.log('⚠️ Firebase nicht bereit - Real-time Sync nicht aktiviert');
+                    return;
+                }
+                
+                // Cleanup alter Listener
+                if (this.syncListener) {
+                    this.syncListener();
+                }
+                
+                const docRef = window.firestoreDoc(window.firebaseDB, 'users', this.userId);
+                
+                // Firestore onSnapshot Listener
+                this.syncListener = window.firestoreOnSnapshot(docRef, (doc) => {
+                    if (!doc.exists()) return;
+                    
+                    const data = doc.data();
+                    const cloudTimestamp = data.lastModified || 0;
+                    
+                    // Erste Ladung - nur timestamp speichern
+                    if (this.cloudLastModified === null) {
+                        this.cloudLastModified = cloudTimestamp;
+                        console.log('📡 Real-time Sync aktiviert');
+                        return;
+                    }
+                    
+                    // Änderung erkannt
+                    if (cloudTimestamp > this.cloudLastModified) {
+                        this.cloudLastModified = cloudTimestamp;
+                        console.log('🔔 Änderung in Cloud erkannt!');
+                        this.handleCloudUpdate(data);
+                    }
+                }, (error) => {
+                    console.error('❌ Real-time Sync Fehler:', error);
+                });
+            }
+            
+            handleCloudUpdate(cloudData) {
+                // Wenn User lokale ungespeicherte Änderungen hat
+                if (this.hasUnsavedChanges) {
+                    this.showConflictNotification(cloudData);
+                } else {
+                    // Keine lokalen Änderungen - einfach Cloud-Daten übernehmen
+                    this.showUpdateNotification(cloudData);
+                }
+            }
+            
+            showConflictNotification(cloudData) {
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-slideDown';
+                notification.innerHTML = `
+                    <div class="bg-orange-500 text-white px-6 py-4 rounded-2xl shadow-2xl max-w-md">
+                        <div class="flex items-start gap-3">
+                            <div class="text-2xl">⚠️</div>
+                            <div class="flex-1">
+                                <div class="font-bold text-lg mb-2">Konflikt erkannt!</div>
+                                <div class="text-sm mb-3">
+                                    Ein anderer User hat Änderungen gemacht. Du hast lokale ungespeicherte Änderungen.
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="app.resolveConflict('cloud', ${JSON.stringify(cloudData).replace(/"/g, '&quot;')})" 
+                                            class="bg-white text-orange-600 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-orange-50 transition-all flex-1">
+                                        Cloud übernehmen
+                                    </button>
+                                    <button onclick="app.resolveConflict('keep', null)" 
+                                            class="bg-orange-700 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-orange-800 transition-all flex-1">
+                                        Meine behalten
+                                    </button>
+                                </div>
+                            </div>
+                            <button onclick="this.parentElement.parentElement.remove()" 
+                                    class="text-white hover:text-orange-200 transition-all">
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(notification);
+                
+                // Auto-remove nach 30 Sekunden
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 30000);
+            }
+            
+            showUpdateNotification(cloudData) {
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-slideDown';
+                notification.innerHTML = `
+                    <div class="bg-blue-500 text-white px-6 py-4 rounded-2xl shadow-2xl max-w-md">
+                        <div class="flex items-start gap-3">
+                            <div class="text-2xl">🔄</div>
+                            <div class="flex-1">
+                                <div class="font-bold text-lg mb-2">Neue Daten verfügbar!</div>
+                                <div class="text-sm mb-3">
+                                    Ein anderer User hat Änderungen gemacht. Daten neu laden?
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="app.acceptCloudUpdate(${JSON.stringify(cloudData).replace(/"/g, '&quot;')})" 
+                                            class="bg-white text-blue-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-50 transition-all flex-1">
+                                        Jetzt laden
+                                    </button>
+                                    <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                                            class="bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-800 transition-all">
+                                        Später
+                                    </button>
+                                </div>
+                            </div>
+                            <button onclick="this.parentElement.parentElement.remove()" 
+                                    class="text-white hover:text-blue-200 transition-all">
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(notification);
+                
+                // Auto-remove nach 20 Sekunden
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 20000);
+            }
+            
+            resolveConflict(action, cloudData) {
+                // Schließe Notification
+                document.querySelectorAll('.animate-slideDown').forEach(n => n.remove());
+                
+                if (action === 'cloud') {
+                    this.acceptCloudUpdate(cloudData);
+                } else {
+                    // Behalte lokale Änderungen - markiere als "muss hochgeladen werden"
+                    this.showModal('💾 Änderungen behalten', 
+                        'Deine lokalen Änderungen wurden beibehalten.\n\nBitte speichere sie bald in die Cloud, um sie mit anderen zu teilen!',
+                        [{ text: 'OK', class: 'bg-gradient-to-r from-indigo-600 to-purple-600' }]
+                    );
+                }
+            }
+            
+            acceptCloudUpdate(cloudData) {
+                // Schließe Notification
+                document.querySelectorAll('.animate-slideDown').forEach(n => n.remove());
+                
+                // Cloud-Daten übernehmen
+                this.fixkosten = cloudData.fixkosten || [];
+                this.ausgabenAll = cloudData.ausgabenAll || {};
+                this.einkommenAll = cloudData.einkommenAll || {};
+                this.zusatzeinkommenAll = cloudData.zusatzeinkommenAll || {};
+                this.sparkonten = cloudData.sparkonten || [];
+                this.sparraten = cloudData.sparraten || [];
+                this.kontobewegungen = cloudData.kontobewegungen || {};
+                this.ausgabenVorlagen = cloudData.ausgabenVorlagen || [];
+                this.benutzer = cloudData.benutzer || this.benutzer;
+                this.haushalt = cloudData.haushalt || this.haushalt;
+                this.standardEinkommen = cloudData.standardEinkommen || {};
+                this.aktiverBenutzer = cloudData.aktiverBenutzer || 'ich';
+                this.settings = cloudData.settings || { currency: 'EUR', dateFormat: 'de-DE' };
+                this.lastSync = cloudData.lastSync;
+                
+                // LocalStorage aktualisieren
+                this.saveData('fixkosten', this.fixkosten);
+                this.saveData('ausgabenAll', this.ausgabenAll);
+                this.saveData('einkommenAll', this.einkommenAll);
+                this.saveData('zusatzeinkommenAll', this.zusatzeinkommenAll);
+                this.saveData('sparkonten', this.sparkonten);
+                this.saveData('sparraten', this.sparraten);
+                this.saveData('kontobewegungen', this.kontobewegungen);
+                this.saveData('ausgabenVorlagen', this.ausgabenVorlagen);
+                this.saveData('benutzer', this.benutzer);
+                this.saveData('haushalt', this.haushalt);
+                this.saveData('standardEinkommen', this.standardEinkommen);
+                this.saveData('aktiverBenutzer', this.aktiverBenutzer);
+                this.saveData('settings', this.settings);
+                this.saveData('lastSync', this.lastSync);
+                
+                // Reset flags
+                this.hasUnsavedChanges = false;
+                this.localLastModified = Date.now();
+                
+                // UI neu rendern
+                this.render();
+                
+                // Kurze Bestätigung
+                const toast = document.createElement('div');
+                toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slideUp';
+                toast.textContent = '✅ Daten aktualisiert!';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            }
+            
+            markAsChanged() {
+                this.hasUnsavedChanges = true;
+                this.localLastModified = Date.now();
             }
 
             resetAllData() {
@@ -4672,6 +4936,7 @@ migrateData(fromVersion, toVersion) {
                     typ: benutzer === 'gemeinsam' ? 'gemeinsam' : 'privat'
                 });
                 this.saveData('fixkosten', this.fixkosten);
+                this.markAsChanged();
                 this.render();
             }
 
