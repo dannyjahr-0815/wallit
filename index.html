@@ -2612,7 +2612,7 @@ migrateData(fromVersion, toVersion) {
                         benutzer: this.benutzer,
                         haushalt: this.haushalt,
                         standardEinkommen: this.standardEinkommen,
-                        aktiverBenutzer: this.aktiverBenutzer,
+                        // aktiverBenutzer wird NICHT synchronisiert - ist eine lokale Einstellung!
                         
                         // Einstellungen
                         settings: this.settings,
@@ -2704,7 +2704,8 @@ migrateData(fromVersion, toVersion) {
                         this.benutzer = data.benutzer || this.benutzer;
                         this.haushalt = data.haushalt || this.haushalt;
                         this.standardEinkommen = data.standardEinkommen || {};
-                        this.aktiverBenutzer = data.aktiverBenutzer || 'ich';
+                        // WICHTIG: aktiverBenutzer NICHT überschreiben - jeder User behält seine Auswahl!
+                        // this.aktiverBenutzer = data.aktiverBenutzer || 'ich';
                         
                         // Einstellungen
                         this.settings = data.settings || { currency: 'EUR', dateFormat: 'de-DE' };
@@ -2724,7 +2725,8 @@ migrateData(fromVersion, toVersion) {
                         this.saveData('benutzer', this.benutzer);
                         this.saveData('haushalt', this.haushalt);
                         this.saveData('standardEinkommen', this.standardEinkommen);
-                        this.saveData('aktiverBenutzer', this.aktiverBenutzer);
+                        // aktiverBenutzer wird NICHT gespeichert - bleibt lokal!
+                        // this.saveData('aktiverBenutzer', this.aktiverBenutzer);
                         this.saveData('settings', this.settings);
                         this.saveData('lastSync', this.lastSync);
                         
@@ -2799,8 +2801,19 @@ migrateData(fromVersion, toVersion) {
                     const localTimestamp = this.loadData('lastModified', 0);
                     
                     if (cloudTimestamp > localTimestamp) {
-                        // Cloud ist neuer - Warnung anzeigen
-                        this.showOutdatedDataWarning(cloudData);
+                        // Cloud ist neuer - aber sind die Daten wirklich unterschiedlich?
+                        const dataChanged = this.compareData(cloudData);
+                        
+                        if (dataChanged) {
+                            // Daten sind tatsächlich unterschiedlich - Warnung anzeigen
+                            this.showOutdatedDataWarning(cloudData);
+                        } else {
+                            // Daten sind identisch - nur Timestamp aktualisieren
+                            console.log('✅ Daten sind identisch - nur Timestamp aktualisiert');
+                            this.localLastModified = cloudTimestamp;
+                            this.saveData('lastModified', cloudTimestamp);
+                            this.setupRealtimeSync();
+                        }
                     } else {
                         // Lokale Daten sind aktuell - aktiviere nur Listener
                         this.setupRealtimeSync();
@@ -2810,6 +2823,48 @@ migrateData(fromVersion, toVersion) {
                 } catch (error) {
                     console.error('❌ Fehler beim Cloud-Check:', error);
                 }
+            }
+            
+            compareData(cloudData) {
+                // Vergleiche die wichtigsten Datenstrukturen
+                try {
+                    // Erstelle einfache Hashes der Daten
+                    const localHash = this.createDataHash();
+                    const cloudHash = this.createCloudDataHash(cloudData);
+                    
+                    const isDifferent = localHash !== cloudHash;
+                    console.log('🔍 Datenvergleich:', isDifferent ? 'UNTERSCHIEDLICH' : 'IDENTISCH');
+                    
+                    return isDifferent;
+                } catch (error) {
+                    console.error('❌ Fehler beim Datenvergleich:', error);
+                    // Im Fehlerfall: Annahme dass Daten unterschiedlich sind (sicherer)
+                    return true;
+                }
+            }
+            
+            createDataHash() {
+                // Erstelle einen einfachen Hash aus den wichtigsten Daten
+                const data = {
+                    ausgaben: this.ausgabenAll,
+                    einkommen: this.einkommenAll,
+                    fixkosten: this.fixkosten,
+                    sparkonten: this.sparkonten,
+                    sparraten: this.sparraten
+                };
+                return JSON.stringify(data).length + '_' + Object.keys(this.ausgabenAll || {}).length;
+            }
+            
+            createCloudDataHash(cloudData) {
+                // Erstelle Hash aus Cloud-Daten
+                const data = {
+                    ausgaben: cloudData.ausgabenAll || {},
+                    einkommen: cloudData.einkommenAll || {},
+                    fixkosten: cloudData.fixkosten || [],
+                    sparkonten: cloudData.sparkonten || [],
+                    sparraten: cloudData.sparraten || []
+                };
+                return JSON.stringify(data).length + '_' + Object.keys(cloudData.ausgabenAll || {}).length;
             }
             
             showInitialLoadPrompt(cloudData) {
@@ -2951,7 +3006,18 @@ migrateData(fromVersion, toVersion) {
             }
             
             handleCloudUpdate(cloudData) {
-                // Wenn User lokale ungespeicherte Änderungen hat
+                // Prüfe ob Daten wirklich unterschiedlich sind
+                const dataChanged = this.compareData(cloudData);
+                
+                if (!dataChanged) {
+                    // Daten sind identisch - nur Timestamp aktualisieren, keine Notification
+                    console.log('✅ Daten unverändert - nur Timestamp aktualisiert');
+                    this.localLastModified = cloudData.lastModified;
+                    this.saveData('lastModified', cloudData.lastModified);
+                    return;
+                }
+                
+                // Daten sind unterschiedlich
                 if (this.hasUnsavedChanges) {
                     this.showConflictNotification(cloudData);
                 } else {
@@ -3071,7 +3137,8 @@ migrateData(fromVersion, toVersion) {
                 this.benutzer = cloudData.benutzer || this.benutzer;
                 this.haushalt = cloudData.haushalt || this.haushalt;
                 this.standardEinkommen = cloudData.standardEinkommen || {};
-                this.aktiverBenutzer = cloudData.aktiverBenutzer || 'ich';
+                // WICHTIG: aktiverBenutzer NICHT überschreiben - jeder User behält seine Auswahl!
+                // this.aktiverBenutzer = cloudData.aktiverBenutzer || 'ich';
                 this.settings = cloudData.settings || { currency: 'EUR', dateFormat: 'de-DE' };
                 this.lastSync = cloudData.lastSync;
                 
@@ -3087,7 +3154,8 @@ migrateData(fromVersion, toVersion) {
                 this.saveData('benutzer', this.benutzer);
                 this.saveData('haushalt', this.haushalt);
                 this.saveData('standardEinkommen', this.standardEinkommen);
-                this.saveData('aktiverBenutzer', this.aktiverBenutzer);
+                // aktiverBenutzer wird NICHT gespeichert - bleibt lokal!
+                // this.saveData('aktiverBenutzer', this.aktiverBenutzer);
                 this.saveData('settings', this.settings);
                 this.saveData('lastSync', this.lastSync);
                 
