@@ -8557,5 +8557,149 @@ migrateData(fromVersion, toVersion) {
             </g>
         </svg>
     </div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<script>
+let browserStream = null;
+let scanning = false;
+
+async function openBrowserScanner(){
+
+    const modal = document.createElement("div");
+    modal.className = "notification-modal";
+    modal.style.display = "flex";
+
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3>Kassenbon scannen</h3>
+            <video id="scannerVideo" autoplay playsinline style="width:100%;border-radius:12px;"></video>
+            <p id="scannerStatus" style="margin-top:10px;font-size:13px;">Kamera wird gestartet...</p>
+            <button onclick="closeBrowserScanner()" class="btn-primary w-full mt-4">Abbrechen</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const video = document.getElementById("scannerVideo");
+    const status = document.getElementById("scannerStatus");
+
+    try{
+        browserStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } }
+        });
+
+        video.srcObject = browserStream;
+        scanning = true;
+        status.innerText = "Bon wird erkannt...";
+        scanLoop(video, status);
+
+    }catch(e){
+        status.innerText = "Kamera-Zugriff nicht möglich.";
+    }
+}
+
+function closeBrowserScanner(){
+    scanning = false;
+    if(browserStream){
+        browserStream.getTracks().forEach(t => t.stop());
+    }
+    document.querySelector(".notification-modal")?.remove();
+}
+
+async function scanLoop(video, status){
+
+    if(!scanning) return;
+
+    if(video.readyState < 2){
+        setTimeout(() => scanLoop(video,status), 800);
+        return;
+    }
+
+    const canvas = document.createElement("canvas");
+    const cropHeight = Math.floor(video.videoHeight * 0.45);
+    const cropY = video.videoHeight - cropHeight;
+
+    canvas.width = video.videoWidth;
+    canvas.height = cropHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video,0,cropY,video.videoWidth,cropHeight,0,0,video.videoWidth,cropHeight);
+
+    const dataUrl = canvas.toDataURL("image/jpeg",0.8);
+
+    const result = await Tesseract.recognize(dataUrl,'deu');
+    const text = result.data.text;
+
+    if(parseReceipt(text)){
+        status.innerText = "Erkannt ✓";
+        setTimeout(closeBrowserScanner,500);
+        return;
+    }
+
+    setTimeout(() => scanLoop(video,status),1200);
+}
+
+function extractTotal(text){
+    const lines = text.split("\n").map(l=>l.trim());
+    const keys=["SUMME","GESAMT","ZU ZAHLEN","ZAHLEN","ENDSUMME","GESAMTBETRAG","BETRAG"];
+
+    for(const line of lines){
+        const u=line.toUpperCase();
+        if(keys.some(k=>u.includes(k))){
+            const m=line.match(/\d+[,.]\d{2}/);
+            if(m) return parseFloat(m[0].replace(",", "."));
+        }
+    }
+    return null;
+}
+
+function normalizeMerchant(name){
+    const u=name.toUpperCase();
+    if(u.includes("REWE")) return "REWE";
+    if(u.includes("ALDI")) return "ALDI";
+    if(u.includes("LIDL")) return "LIDL";
+    if(u.includes("NETTO")) return "NETTO";
+    if(u.includes("KAUFLAND")) return "KAUFLAND";
+    if(u.includes("EDEKA")) return "EDEKA";
+    return name;
+}
+
+function parseReceipt(text){
+
+    const lines=text.split("\n").map(l=>l.trim()).filter(l=>l.length>3);
+    if(!lines.length) return false;
+
+    const merchant=normalizeMerchant(lines[0]);
+
+    const dateMatch=text.match(/\d{2}\.\d{2}\.\d{4}/);
+    let iso="";
+    if(dateMatch){
+        const [d,m,y]=dateMatch[0].split(".");
+        iso=`${y}-${m}-${d}`;
+    }
+
+    let total=extractTotal(text);
+    if(!total){
+        const amounts=text.match(/\d+[,.]\d{2}/g)||[];
+        if(amounts.length){
+            total=Math.max(...amounts.map(a=>parseFloat(a.replace(",", "."))));
+        }
+    }
+
+    if(!merchant||!total) return false;
+
+    const beschreibung=document.querySelector("input[placeholder='Beschreibung']");
+    const betrag=document.querySelector("input[placeholder='Betrag']");
+    const datum=document.querySelector("input[type='date']");
+
+    if(beschreibung) beschreibung.value=merchant;
+    if(betrag) betrag.value=total.toFixed(2);
+    if(datum&&iso) datum.value=iso;
+
+    return true;
+}
+</script>
+
 </body>
 </html>
