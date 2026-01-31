@@ -1766,12 +1766,45 @@
 .toast-success{ background: rgba(16,185,129,0.95); color:#fff; }
 .toast-error{ background: rgba(239,68,68,0.95); color:#fff; }
 
-body.dark-mode .toast-success{ background: rgba(16,185,129,0.90); }
+        body.dark-mode .toast-success{ background: rgba(16,185,129,0.90); }
 body.dark-mode .toast-error{ background: rgba(239,68,68,0.90); }
 
 @keyframes fadeInScale{
     from{ opacity:0; transform: scale(0.96); }
     to{ opacity:1; transform: scale(1); }
+}
+
+
+/* ========================================
+   Floating Action Button (FAB) - Quick Upload
+   ======================================== */
+#fabUpload {
+    transition: transform 0.2s ease;
+}
+
+#fabUpload:hover {
+    transform: scale(1.05);
+}
+
+#fabUpload:active {
+    transform: scale(0.98);
+}
+
+#fabUpload.has-changes circle {
+    fill: #f59e0b;
+}
+
+/* Show FAB ONLY on mobile (max-width: 767px) */
+@media (max-width: 767px) {
+    #fabUpload {
+        display: block !important;
+    }
+}
+
+@media (min-width: 768px) {
+    #fabUpload {
+        display: none !important;
+    }
 }
 
 
@@ -2079,6 +2112,7 @@ body.dark-mode .fm-outline {
                 this.activeTab = 'month';
                 this.charts = {};
                 this.isSyncing = false;
+                this.isProcessingCloudUpdate = false;
                 this.lastSync = this.loadData('lastSync', null);
                 this.initIndexedDB();
                 this.setupEventListeners();
@@ -2853,8 +2887,8 @@ migrateData(fromVersion, toVersion) {
                         this.invalidateCache();
                     }
                     
-                    // 🔄 REAL-TIME SYNC: Markiere als geändert (außer userId und lastSync)
-                    if (key !== 'userId' && key !== 'lastSync' && key !== 'currentMonth') {
+                    // 🔄 REAL-TIME SYNC: Markiere als geändert (außer userId, lastSync, lastModified und während Sync)
+                    if (key !== 'userId' && key !== 'lastSync' && key !== 'currentMonth' && key !== 'lastModified' && !this.isSyncing && !this.isProcessingCloudUpdate) {
                         this.markAsChanged();
                     }
                 } catch (error) {
@@ -2898,6 +2932,7 @@ migrateData(fromVersion, toVersion) {
             async performSync() {
                 this.isSyncing = true;
                 this.render();
+                this.updateFAB();
                 
                 try {
                     const now = Date.now();
@@ -2934,6 +2969,9 @@ migrateData(fromVersion, toVersion) {
                     this.cloudLastModified = now;
                     this.saveData('lastModified', now);
                     
+                    // Update FAB immediately after successful sync
+                    this.updateFAB();
+                    
                     // Real-time Sync aktivieren falls noch nicht aktiv
                     if (!this.syncListener) {
                         this.setupRealtimeSync();
@@ -2960,6 +2998,38 @@ migrateData(fromVersion, toVersion) {
                 } finally {
                     this.isSyncing = false;
                     this.render();
+                    this.updateFAB();
+                }
+            }
+            
+            updateFAB() {
+                const fab = document.getElementById('fabUpload');
+                if (!fab) return;
+                
+                // Show/hide FAB based on Firebase status
+                if (window.firebaseReady && window.firebaseDB) {
+                    // Remove inline display style to let CSS media query handle it
+                    fab.style.removeProperty('display');
+                } else {
+                    // Hide if Firebase not ready
+                    fab.style.display = 'none';
+                    return;
+                }
+                
+                // Update circle color based on state
+                const circle = fab.querySelector('circle');
+                if (circle) {
+                    if (this.hasUnsavedChanges) {
+                        circle.setAttribute('fill', '#f59e0b'); // Orange
+                    } else {
+                        circle.setAttribute('fill', '#10b981'); // Green
+                    }
+                }
+                
+                // Also update class for CSS (backup)
+                fab.classList.remove('has-changes');
+                if (this.hasUnsavedChanges) {
+                    fab.classList.add('has-changes');
                 }
             }
 
@@ -3318,7 +3388,15 @@ migrateData(fromVersion, toVersion) {
                     // Daten sind identisch - nur Timestamp aktualisieren, keine Notification
                     console.log('✅ Daten unverändert - nur Timestamp aktualisiert');
                     this.localLastModified = cloudData.lastModified;
+                    
+                    // Flag setzen um markAsChanged zu verhindern
+                    this.isProcessingCloudUpdate = true;
                     this.saveData('lastModified', cloudData.lastModified);
+                    this.isProcessingCloudUpdate = false;
+                    
+                    // WICHTIG: hasUnsavedChanges auf false setzen da Daten identisch sind
+                    this.hasUnsavedChanges = false;
+                    this.updateFAB();
                     return;
                 }
                 
@@ -3339,54 +3417,51 @@ migrateData(fromVersion, toVersion) {
                 notification.innerHTML = `
                     <div class="bg-gradient-to-br from-orange-500 to-red-500 text-white rounded-2xl shadow-2xl max-w-md w-full animate-modalFadeIn">
                         <!-- Header -->
-                        <div class="bg-orange-600 bg-opacity-30 px-6 py-4 rounded-t-2xl flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="text-3xl animate-pulse">⚠️</div>
-                                <div class="font-bold text-xl">Konflikt erkannt!</div>
+                        <div class="bg-orange-600 bg-opacity-30 px-5 py-4 rounded-t-2xl flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-7 h-7 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                                <div class="font-bold text-lg">Konflikt erkannt!</div>
                             </div>
                             <button onclick="this.parentElement.parentElement.parentElement.remove()" 
-                                    class="text-white hover:bg-white hover:bg-opacity-20 rounded-full w-8 h-8 flex items-center justify-center transition-all">
-                                ✕
+                                    class="text-white hover:bg-white hover:bg-opacity-20 rounded-full w-8 h-8 flex items-center justify-center transition-all flex-shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
                             </button>
                         </div>
                         
                         <!-- Content -->
-                        <div class="px-6 py-5">
+                        <div class="px-5 py-4">
                             <div class="mb-4">
-                                <p class="text-base leading-relaxed">
+                                <p class="text-sm leading-relaxed">
                                     Ein anderer User hat Änderungen gemacht, aber du hast auch lokale Änderungen.
                                 </p>
                             </div>
                             
                             <!-- Info Box -->
                             <div class="bg-white bg-opacity-20 rounded-xl p-3 mb-4">
-                                <p class="text-sm">
-                                    💡 <strong>Tipp:</strong> Wähle, welche Version du behalten möchtest.
+                                <p class="text-xs">
+                                    <strong>Tipp:</strong> Wähle, welche Version du behalten möchtest.
                                 </p>
                             </div>
                             
                             <!-- Buttons -->
-                            <div class="flex flex-col sm:flex-row gap-3">
+                            <div class="flex flex-col gap-2.5">
                                 <button onclick="app.resolveConflict('cloud', ${JSON.stringify(cloudData).replace(/"/g, '&quot;')})" 
-                                        class="flex-1 bg-white text-orange-600 px-5 py-3 rounded-xl text-base font-bold hover:shadow-xl hover:scale-105 transition-all">
-                                    ☁️ Cloud übernehmen
+                                        class="w-full bg-white text-orange-600 px-4 py-3.5 rounded-xl text-base font-bold hover:shadow-xl transition-all min-h-[48px]">
+                                    Cloud übernehmen
                                 </button>
                                 <button onclick="app.resolveConflict('keep', null)" 
-                                        class="flex-1 bg-orange-700 bg-opacity-50 text-white px-5 py-3 rounded-xl text-base font-bold hover:bg-opacity-70 transition-all border-2 border-white border-opacity-30">
-                                    💾 Meine behalten
+                                        class="w-full bg-orange-700 bg-opacity-50 text-white px-4 py-3.5 rounded-xl text-base font-bold hover:bg-opacity-70 transition-all border-2 border-white border-opacity-30 min-h-[48px]">
+                                    Meine behalten
                                 </button>
                             </div>
                         </div>
                     </div>
                 `;
                 document.body.appendChild(notification);
-                
-                // Auto-remove nach 30 Sekunden
-                setTimeout(() => {
-                    if (notification.parentElement) {
-                        notification.remove();
-                    }
-                }, 30000);
             }
             
             showUpdateNotification(cloudData) {
@@ -3397,59 +3472,56 @@ migrateData(fromVersion, toVersion) {
                 notification.innerHTML = `
                     <div class="bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl shadow-2xl max-w-md w-full animate-modalFadeIn">
                         <!-- Header -->
-                        <div class="bg-blue-600 bg-opacity-30 px-6 py-4 rounded-t-2xl flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="text-3xl">🔄</div>
-                                <div class="font-bold text-xl">Neue Daten verfügbar!</div>
+                        <div class="bg-blue-600 bg-opacity-30 px-5 py-4 rounded-t-2xl flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-7 h-7 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                                <div class="font-bold text-lg">Neue Daten verfügbar!</div>
                             </div>
                             <button onclick="this.parentElement.parentElement.parentElement.remove()" 
-                                    class="text-white hover:bg-white hover:bg-opacity-20 rounded-full w-8 h-8 flex items-center justify-center transition-all">
-                                ✕
+                                    class="text-white hover:bg-white hover:bg-opacity-20 rounded-full w-8 h-8 flex items-center justify-center transition-all flex-shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
                             </button>
                         </div>
                         
                         <!-- Content -->
-                        <div class="px-6 py-5">
+                        <div class="px-5 py-4">
                             <div class="mb-4">
-                                <p class="text-base leading-relaxed">
+                                <p class="text-sm leading-relaxed">
                                     Ein anderer User hat Änderungen gemacht. Möchtest du die aktuellen Daten laden?
                                 </p>
                             </div>
                             
                             <!-- Info Box -->
                             <div class="bg-white bg-opacity-20 rounded-xl p-3 mb-4">
-                                <p class="text-sm">
-                                    ✨ <strong>Empfehlung:</strong> Lade die Daten jetzt, um auf dem neuesten Stand zu bleiben.
+                                <p class="text-xs">
+                                    <strong>Empfehlung:</strong> Lade die Daten jetzt, um auf dem neuesten Stand zu bleiben.
                                 </p>
                             </div>
                             
                             <!-- Buttons -->
-                            <div class="flex flex-col sm:flex-row gap-3">
+                            <div class="flex flex-col gap-2.5">
                                 <button onclick="app.acceptCloudUpdate(${JSON.stringify(cloudData).replace(/"/g, '&quot;')})" 
-                                        class="flex-1 bg-white text-blue-600 px-5 py-3 rounded-xl text-base font-bold hover:shadow-xl hover:scale-105 transition-all">
-                                    ✓ Jetzt laden
+                                        class="w-full bg-white text-blue-600 px-4 py-3.5 rounded-xl text-base font-bold hover:shadow-xl transition-all min-h-[48px]">
+                                    Jetzt laden
                                 </button>
                                 <button onclick="this.parentElement.parentElement.parentElement.remove()" 
-                                        class="flex-1 bg-blue-700 bg-opacity-50 text-white px-5 py-3 rounded-xl text-base font-bold hover:bg-opacity-70 transition-all border-2 border-white border-opacity-30">
-                                    ⏱️ Später
+                                        class="w-full bg-blue-700 bg-opacity-50 text-white px-4 py-3.5 rounded-xl text-base font-bold hover:bg-opacity-70 transition-all border-2 border-white border-opacity-30 min-h-[48px]">
+                                    Später
                                 </button>
                             </div>
                         </div>
                     </div>
                 `;
                 document.body.appendChild(notification);
-                
-                // Auto-remove nach 20 Sekunden
-                setTimeout(() => {
-                    if (notification.parentElement) {
-                        notification.remove();
-                    }
-                }, 20000);
             }
             
             resolveConflict(action, cloudData) {
                 // Schließe Notification
-                document.querySelectorAll('.animate-slideDown').forEach(n => n.remove());
+                document.querySelectorAll('.notification-modal').forEach(n => n.remove());
                 
                 if (action === 'cloud') {
                     this.acceptCloudUpdate(cloudData);
@@ -3464,7 +3536,7 @@ migrateData(fromVersion, toVersion) {
             
             acceptCloudUpdate(cloudData) {
                 // Schließe Notification
-                document.querySelectorAll('.animate-slideDown').forEach(n => n.remove());
+                document.querySelectorAll('.notification-modal').forEach(n => n.remove());
                 
                 // Cloud-Daten übernehmen
                 this.fixkosten = cloudData.fixkosten || [];
@@ -3527,6 +3599,7 @@ migrateData(fromVersion, toVersion) {
             markAsChanged() {
                 this.hasUnsavedChanges = true;
                 this.localLastModified = Date.now();
+                this.updateFAB();
             }
 
             resetAllData() {
@@ -8367,6 +8440,13 @@ migrateData(fromVersion, toVersion) {
             try {
                 window.app = new FinanceManagerCloud();
                 console.log('✅ Wallit erfolgreich initialisiert');
+                
+                // Initialize FAB
+                setTimeout(() => {
+                    if (window.app && window.app.updateFAB) {
+                        window.app.updateFAB();
+                    }
+                }, 500);
             } catch (error) {
                 console.error('❌ Fehler beim Initialisieren:', error);
                 document.body.innerHTML = `
@@ -8384,5 +8464,20 @@ migrateData(fromVersion, toVersion) {
             }
         }, 100);
     </script>
+    
+    <!-- Floating Action Button for Quick Cloud Upload (Mobile Only) -->
+    <div id="fabUpload" onclick="app.performSync()" title="In Cloud hochladen" style="position: fixed; top: 16px; right: 16px; width: 56px; height: 56px; cursor: pointer; display: none; z-index: 9999;">
+        <svg width="56" height="56" viewBox="0 0 56 56" style="filter: drop-shadow(0 4px 12px rgba(16, 185, 129, 0.4));">
+            <circle cx="28" cy="28" r="28" fill="#10b981"/>
+            <g transform="translate(16, 16)">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"
+                      stroke="white"
+                      stroke-width="2.4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      fill="none"/>
+            </g>
+        </svg>
+    </div>
 </body>
 </html>
