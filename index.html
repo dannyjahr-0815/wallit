@@ -8592,7 +8592,7 @@ async function openBrowserScanner(){
                 <img id="scanPreviewImg" alt="Vorschau" style="display:none;width:100%;height:auto;"/>
             </div>
 
-            <input id="scanFileInput" type="file" accept="image/*" capture="environment" style="display:none;" />
+            <input id="scanFileInput" type="file" accept="image/*" capture="environment" style="position:fixed;left:-9999px;top:auto;width:1px;height:1px;opacity:0;" />
 
             <p id="scannerStatus" style="margin-top:10px;font-size:13px;opacity:.9;">Bereit. Foto aufnehmen.</p>
 
@@ -8629,6 +8629,8 @@ async function openBrowserScanner(){
 
     btnTake.addEventListener("click", () => {
         // iOS will open native camera; user confirms photo -> fileInput change
+        fileInput.value = "";
+        fileInput.value = "";
         fileInput.click();
     });
 
