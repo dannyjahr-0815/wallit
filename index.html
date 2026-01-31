@@ -12,18 +12,23 @@
     <title>Wallit</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
 /* ========================================
-   Custom Toast Function (replaces alert UI only)
+   Viewport-Centered Toast
    ======================================== */
 window.showToast = function(message, type = "success") {
+    const container = document.createElement("div");
+    container.className = "toast-container";
+
     const toast = document.createElement("div");
     toast.className = "toast-notification toast-" + type;
     toast.textContent = message;
-    document.body.appendChild(toast);
+
+    container.appendChild(toast);
+    document.body.appendChild(container);
 
     setTimeout(() => {
-        toast.style.opacity = "0";
-        toast.style.transition = "opacity 0.3s ease";
-        setTimeout(() => toast.remove(), 300);
+        container.style.opacity = "0";
+        container.style.transition = "opacity 0.25s ease";
+        setTimeout(() => container.remove(), 250);
     }, 2600);
 };
 
@@ -1609,21 +1614,30 @@ window.showToast = function(message, type = "success") {
 
     
 /* ========================================
-   Notification Upgrade (non-invasive)
+   Robust Notification System (Final)
    ======================================== */
-.toast-notification {
+
+.toast-container {
     position: fixed;
-    top: 24px;
-    left: 50%;
-    transform: translateX(-50%);
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
     z-index: 10000;
-    padding: 14px 22px;
-    border-radius: 14px;
+}
+
+.toast-notification {
+    pointer-events: auto;
+    padding: 16px 22px;
+    border-radius: 16px;
     font-weight: 600;
-    box-shadow: 0 14px 40px rgba(0,0,0,0.28);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    animation: slideDown 0.25s ease-out;
+    max-width: 90%;
+    text-align: center;
+    animation: fadeInScale 0.2s ease-out;
 }
 
 .toast-success {
@@ -1636,26 +1650,9 @@ window.showToast = function(message, type = "success") {
     color: #fff;
 }
 
-body.dark-mode .toast-success {
-    background: rgba(16,185,129,0.9);
-}
-
-body.dark-mode .toast-error {
-    background: rgba(239,68,68,0.9);
-}
-
-
-/* ========================================
-   Mobile Centered Toast Fix
-   ======================================== */
-@media (max-width: 768px) {
-    .toast-notification {
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        width: calc(100% - 40px);
-        text-align: center;
-    }
+@keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
 }
 
 </style>
