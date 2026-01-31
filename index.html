@@ -1876,21 +1876,94 @@ body.dark-mode .notification-modal .bg-blue-600{
 </style>
 
 <style>
+
 .secondary-btn{
-  background: rgba(15,23,42,.08);
+  background: #eef2ff;              /* visible on white */
   color:#0f172a;
-  border: 1px solid rgba(15,23,42,.10);
-  border-radius: 12px;
-  padding: 12px 14px;
-  font-weight: 600;
+  border: 1px solid rgba(37,99,235,.25);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(2,6,23,.10);
+  min-height: 54px;
+}
+.secondary-btn:active{
+  transform: translateY(1px);
 }
 body.dark-mode .secondary-btn{
-  background: rgba(255,255,255,.10);
+  background: rgba(255,255,255,.14); /* visible on dark */
   color:#ffffff;
-  border-color: rgba(255,255,255,.14);
+  border-color: rgba(255,255,255,.22);
+  box-shadow: 0 10px 26px rgba(0,0,0,.45);
+}
+
+</style>
+
+
+<style>
+/* === Receipt scanner modal button contrast fix === */
+#receiptScannerModal .btn-primary{
+  background: linear-gradient(90deg, rgba(123,97,255,1), rgba(142,110,255,1));
+  color: #fff !important;
+  border: none;
+}
+#receiptScannerModal 
+.secondary-btn{
+  background: #eef2ff;              /* visible on white */
+  color:#0f172a;
+  border: 1px solid rgba(37,99,235,.25);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(2,6,23,.10);
+  min-height: 54px;
+}
+.secondary-btn:active{
+  transform: translateY(1px);
+}
+body.dark-mode .secondary-btn{
+  background: rgba(255,255,255,.14); /* visible on dark */
+  color:#ffffff;
+  border-color: rgba(255,255,255,.22);
+  box-shadow: 0 10px 26px rgba(0,0,0,.45);
+}
+
+#receiptScannerModal .secondary-btn:active{
+  transform: translateY(1px);
+}
+body.dark-mode #receiptScannerModal 
+.secondary-btn{
+  background: #eef2ff;              /* visible on white */
+  color:#0f172a;
+  border: 1px solid rgba(37,99,235,.25);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(2,6,23,.10);
+  min-height: 54px;
+}
+.secondary-btn:active{
+  transform: translateY(1px);
+}
+body.dark-mode .secondary-btn{
+  background: rgba(255,255,255,.14); /* visible on dark */
+  color:#ffffff;
+  border-color: rgba(255,255,255,.22);
+  box-shadow: 0 10px 26px rgba(0,0,0,.45);
+}
+
+#receiptScannerModal button{
+  min-height: 52px;
+  font-size: 18px;
 }
 </style>
 
+<style>
+
+/* Ensure buttons that are hidden don't reserve space on some WebKit edge cases */
+button[style*="display:none"]{ display:none !important; }
+
+</style>
 </head>
 <body>
     <div id="app"></div>
