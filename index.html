@@ -8691,12 +8691,8 @@ async function visionOCR(imageBase64){
 function fillFromOCR(data){
     const fullText = (data.fullText || "").trim();
 
-    // Merchant: first meaningful line (fallback)
-    let merchant = "";
-    if(fullText){
-        const lines = fullText.split("\n").map(l=>l.trim()).filter(l=>l.length>2);
-        if(lines.length) merchant = normalizeMerchant(lines[0]);
-    }
+    // Merchant: best-effort detection
+    let merchant = detectMerchant(fullText);
 
     const iso = (data.dateISO || "").trim();
     const total = (data.total != null && !Number.isNaN(Number(data.total))) ? Number(data.total) : null;
@@ -8731,22 +8727,110 @@ function extractTotal(text){
 }
 
 function normalizeMerchant(name){
-    const u=name.toUpperCase();
-    if(u.includes("REWE")) return "REWE";
-    if(u.includes("ALDI")) return "ALDI";
-    if(u.includes("LIDL")) return "LIDL";
-    if(u.includes("NETTO")) return "NETTO";
-    if(u.includes("KAUFLAND")) return "KAUFLAND";
-    if(u.includes("EDEKA")) return "EDEKA";
-    return name;
+    const u = String(name || "").toUpperCase();
+
+    // Common retailers (extend anytime)
+    const map = [
+        ["REWE", "REWE"],
+        ["ALDI", "ALDI"],
+        ["LIDL", "LIDL"],
+        ["NETTO", "NETTO"],
+        ["KAUFLAND", "KAUFLAND"],
+        ["EDEKA", "EDEKA"],
+        ["PENNY", "PENNY"],
+        ["ROSSMANN", "ROSSMANN"],
+        ["DM", "dm"],
+        ["MÜLLER", "Müller"],
+        ["MUELLER", "Müller"],
+        ["IKEA", "IKEA"],
+        ["OBI", "OBI"],
+        ["BAUHAUS", "BAUHAUS"],
+        ["TOOM", "toom"],
+        ["H&M", "H&M"],
+        ["HM", "H&M"],
+        ["ZARA", "ZARA"],
+        ["PRIMARK", "PRIMARK"],
+        ["MEDIA MARKT", "MediaMarkt"],
+        ["MEDIAMARKT", "MediaMarkt"],
+        ["SATURN", "Saturn"],
+        ["AMAZON", "Amazon"],
+        ["APOTHEKE", "Apotheke"],
+    ];
+    for(const [k,v] of map){
+        if(u.includes(k)) return v;
+    }
+    return String(name || "").trim();
 }
+
+function detectMerchant(fullText){
+    const text = String(fullText || "").trim();
+    if(!text) return "";
+
+    const lines = text
+        .split("\n")
+        .map(l => l.trim())
+        .filter(l => l.length > 1);
+
+    // 1) Hard match first (best accuracy)
+    for(const l of lines){
+        const n = normalizeMerchant(l);
+        // normalizeMerchant returns changed value when it matched
+        if(n && n !== l.trim()) return n;
+    }
+
+    // 2) Heuristics: first line that looks like a shop name (not totals/address/meta)
+    const isBad = (l) => {
+        const u = l.toUpperCase();
+
+        // Skip obvious non-merchant lines
+        const badTokens = [
+            "SUMME","GESAMT","ZU ZAHLEN","TOTAL","ENDSUMME",
+            "MWST","UST","USt","STNR","ST.-NR","STEUER",
+            "KASSE","BON","RECHNUNG","BELEG","VIELEN DANK",
+            "TEL","TELEFON","WWW","HTTP","HTTPS","EMAIL",
+            "KARTENZAHLUNG","EC","VISA","MASTERCARD",
+            "DATUM","UHR","UHRZEIT"
+        ];
+        if(badTokens.some(t => u.includes(t))) return true;
+
+        // Skip lines that are mostly numbers / IDs / times
+        const digits = (l.match(/\d/g) || []).length;
+        const letters = (l.match(/[A-Za-zÄÖÜäöüß]/g) || []).length;
+        if(digits >= 6 && letters <= 2) return true;
+
+        // Skip postal code / address-y lines
+        if(/\b\d{5}\b/.test(l)) return true;
+        if(/\b(STR\.|STRASSE|STRASSE|WEG|PLATZ|ALLEE|RING|GASSE)\b/i.test(l)) return true;
+
+        // Too long and address-like
+        if(l.length > 42 && digits >= 4) return true;
+
+        return false;
+    };
+
+    for(const l of lines){
+        if(isBad(l)) continue;
+
+        // must have some letters
+        if(!/[A-Za-zÄÖÜäöüß]/.test(l)) continue;
+
+        // avoid very generic words
+        if(l.trim().length < 2) continue;
+
+        return normalizeMerchant(l);
+    }
+
+    // Fallback: first non-empty line
+    return normalizeMerchant(lines[0] || "");
+}
+
 
 function parseReceipt(text){
 
     const lines=text.split("\n").map(l=>l.trim()).filter(l=>l.length>3);
     if(!lines.length) return false;
 
-    const merchant=normalizeMerchant(lines[0]);
+    const merchant = detectMerchant(text);
 
     const dateMatch=text.match(/\d{2}\.\d{2}\.\d{4}/);
     let iso="";
