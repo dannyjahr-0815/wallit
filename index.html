@@ -843,9 +843,9 @@
             flex-shrink: 0;
         }
         
-        body.dark-mode .notification-modal {
-            background: rgba(0, 0, 0, 0.8);
-        }
+        body.dark-mode .notification-modal{
+    background: rgba(0,0,0,0.85);
+}
         
         .modal-content {
             background: white;
@@ -917,18 +917,14 @@
             }
         }
         
-        body.dark-mode .modal-content {
-            background: rgba(30, 30, 50, 0.95);
-            border: 1px solid rgba(102, 126, 234, 0.3);
-        }
+        body.dark-mode .modal-content{
+    background: white;
+    border: none;
+}
         
-        body.dark-mode .modal-content h3 {
-            color: #e0e0e0 !important;
-        }
+        body.dark-mode .modal-content h3{ color:#0f172a !important; }
         
-        body.dark-mode .modal-content p {
-            color: #d0d0d0 !important;
-        }
+        body.dark-mode .modal-content p{ color:#1f2937 !important; }
         
         body.dark-mode .modal-content button.bg-gray-300 {
             background: rgba(70, 70, 90, 0.8) !important;
@@ -1722,6 +1718,55 @@
    Robust Notification System (iPhone-safe, centered)
    ======================================== */
 
+/* ========================================
+   Notification Modal Buttons (more prominent)
+   Scoped to .notification-modal to avoid affecting app buttons
+   ======================================== */
+.notification-modal .fm-notify-btn{
+    width: 100%;
+    min-height: 52px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: transform 180ms ease, filter 180ms ease, box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease;
+    user-select: none;
+}
+.notification-modal .fm-notify-primary{
+    color: #0b2a6f;
+    background: linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(219,234,254,0.98) 100%);
+    border: 2px solid rgba(255,255,255,0.65);
+    box-shadow: 0 16px 32px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.20) inset;
+}
+.notification-modal .fm-notify-primary:hover{
+    filter: brightness(1.03);
+    box-shadow: 0 18px 36px rgba(0,0,0,0.30), 0 0 0 1px rgba(255,255,255,0.28) inset;
+}
+.notification-modal .fm-notify-secondary{
+    color: rgba(255,255,255,0.92);
+    background: rgba(255,255,255,0.08);
+    border: 1.5px solid rgba(255,255,255,0.22);
+    box-shadow: 0 10px 22px rgba(0,0,0,0.18);
+    font-weight: 650;
+}
+.notification-modal .fm-notify-secondary:hover{
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.30);
+}
+body.dark-mode .notification-modal .fm-notify-primary{
+    color: #0b2a6f; /* stays readable on bright button */
+}
+body.dark-mode .notification-modal .fm-notify-secondary{
+    background: rgba(255,255,255,0.10);
+    border-color: rgba(255,255,255,0.26);
+}
+
+
 .toast-container{
     position: fixed;
     top: 0; 
@@ -1816,6 +1861,16 @@ body.dark-mode .toast-error{ background: rgba(239,68,68,0.90); }
 }
 body.dark-mode .fm-outline {
     border-color: #353C6C !important; /* keep consistent with dark-mode card outline system */
+}
+
+
+/* --- Force notification blue card to match light mode in dark mode --- */
+body.dark-mode .notification-modal .bg-gradient-to-br{
+    background: linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%) !important;
+    color: #ffffff !important;
+}
+body.dark-mode .notification-modal .bg-blue-600{
+    background-color: rgba(37, 99, 235, 0.85) !important;
 }
 
 </style>
@@ -2113,6 +2168,7 @@ body.dark-mode .fm-outline {
                 this.charts = {};
                 this.isSyncing = false;
                 this.isProcessingCloudUpdate = false;
+                this.isAcceptingCloudUpdate = false;
                 this.lastSync = this.loadData('lastSync', null);
                 this.initIndexedDB();
                 this.setupEventListeners();
@@ -2887,8 +2943,11 @@ migrateData(fromVersion, toVersion) {
                         this.invalidateCache();
                     }
                     
-                    // 🔄 REAL-TIME SYNC: Markiere als geändert (außer userId, lastSync, lastModified und während Sync)
-                    if (key !== 'userId' && key !== 'lastSync' && key !== 'currentMonth' && key !== 'lastModified' && !this.isSyncing && !this.isProcessingCloudUpdate) {
+                    // 🔄 REAL-TIME SYNC: Markiere als geändert (außer Metadaten und UI-Einstellungen)
+                    // Ausgeschlossen: Metadaten (userId, lastSync, lastModified, dataVersion, currentMonth)
+                    //                 UI-Einstellungen (aktiverBenutzer, darkMode, settings)
+                    const excludedKeys = ['userId', 'lastSync', 'currentMonth', 'lastModified', 'dataVersion', 'aktiverBenutzer', 'darkMode', 'settings'];
+                    if (!excludedKeys.includes(key) && !this.isSyncing && !this.isProcessingCloudUpdate && !this.isAcceptingCloudUpdate) {
                         this.markAsChanged();
                     }
                 } catch (error) {
@@ -3450,11 +3509,11 @@ migrateData(fromVersion, toVersion) {
                             <!-- Buttons -->
                             <div class="flex flex-col gap-2.5">
                                 <button onclick="app.resolveConflict('cloud', ${JSON.stringify(cloudData).replace(/"/g, '&quot;')})" 
-                                        class="w-full bg-white text-orange-600 px-4 py-3.5 rounded-xl text-base font-bold hover:shadow-xl transition-all min-h-[48px]">
+                                        class="fm-notify-btn fm-notify-primary">
                                     Cloud übernehmen
                                 </button>
                                 <button onclick="app.resolveConflict('keep', null)" 
-                                        class="w-full bg-orange-700 bg-opacity-50 text-white px-4 py-3.5 rounded-xl text-base font-bold hover:bg-opacity-70 transition-all border-2 border-white border-opacity-30 min-h-[48px]">
+                                        class="fm-notify-btn fm-notify-secondary">
                                     Meine behalten
                                 </button>
                             </div>
@@ -3505,11 +3564,11 @@ migrateData(fromVersion, toVersion) {
                             <!-- Buttons -->
                             <div class="flex flex-col gap-2.5">
                                 <button onclick="app.acceptCloudUpdate(${JSON.stringify(cloudData).replace(/"/g, '&quot;')})" 
-                                        class="w-full bg-white text-blue-600 px-4 py-3.5 rounded-xl text-base font-bold hover:shadow-xl transition-all min-h-[48px]">
+                                        class="fm-notify-btn fm-notify-primary">
                                     Jetzt laden
                                 </button>
                                 <button onclick="this.parentElement.parentElement.parentElement.remove()" 
-                                        class="w-full bg-blue-700 bg-opacity-50 text-white px-4 py-3.5 rounded-xl text-base font-bold hover:bg-opacity-70 transition-all border-2 border-white border-opacity-30 min-h-[48px]">
+                                        class="fm-notify-btn fm-notify-secondary">
                                     Später
                                 </button>
                             </div>
@@ -3537,6 +3596,9 @@ migrateData(fromVersion, toVersion) {
             acceptCloudUpdate(cloudData) {
                 // Schließe Notification
                 document.querySelectorAll('.notification-modal').forEach(n => n.remove());
+                
+                // Flag setzen um markAsChanged zu verhindern
+                this.isAcceptingCloudUpdate = true;
                 
                 // Cloud-Daten übernehmen
                 this.fixkosten = cloudData.fixkosten || [];
@@ -3579,6 +3641,12 @@ migrateData(fromVersion, toVersion) {
                     this.localLastModified = cloudData.lastModified;
                     this.saveData('lastModified', cloudData.lastModified);
                 }
+                
+                // Flag zurücksetzen
+                this.isAcceptingCloudUpdate = false;
+                
+                // FAB aktualisieren
+                this.updateFAB();
                 
                 // UI neu rendern
                 this.render();
@@ -7211,6 +7279,16 @@ migrateData(fromVersion, toVersion) {
 
                     <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
                         <h2 class="flex items-center gap-2 text-2xl font-bold text-gray-800 mb-4">${icons.shoppingCart} <span>Variable Ausgaben</span></h2>
+                        
+                        <div class="mb-4">
+                            <button 
+                                id="openBrowserScanner"
+                                onclick="openBrowserScanner()"
+                                class="btn-primary w-full flex items-center justify-center gap-2"
+                                type="button">
+                                📷 Bon scannen
+                            </button>
+                        </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3 mb-4">
                             <input type="date" id="ausgDatum" value="${this.getTodayDateString()}" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                             <input type="text" id="ausgName" placeholder="Beschreibung" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
