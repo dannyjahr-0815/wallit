@@ -10,7 +10,24 @@
     <link rel="apple-touch-icon" href="wallit-icon-512.png">
     <link rel="icon" type="image/png" href="wallit-icon-512.png">
     <title>Wallit</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+/* ========================================
+   Custom Toast Function (replaces alert UI only)
+   ======================================== */
+window.showToast = function(message, type = "success") {
+    const toast = document.createElement("div");
+    toast.className = "toast-notification toast-" + type;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transition = "opacity 0.3s ease";
+        setTimeout(() => toast.remove(), 300);
+    }, 2600);
+};
+
+</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
@@ -1243,7 +1260,7 @@
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-top: 1.5px solid rgba(0,0,0,0.12);
-            box-shadow: 0 -1px 0 rgba(255,255,255,0.5);
+            box-shadow: 0 -8px 24px rgba(0,0,0,0.12), 0 -1px 0 rgba(255,255,255,0.5);
             z-index: 999;
         }
         .bn-item{
@@ -1318,7 +1335,7 @@
         body.dark-mode .bottom-nav{
             background: rgba(17,24,39,0.95);
             border-top: 1.5px solid rgba(255,255,255,0.15);
-            box-shadow: 0 -1px 0 rgba(255,255,255,0.05);
+            box-shadow: 0 -10px 28px rgba(0,0,0,0.55), 0 -1px 0 rgba(255,255,255,0.05);
         }
         
         body.dark-mode .bn-item{ 
@@ -1540,6 +1557,107 @@
         .animate-slideUp {
             animation: slideUp 0.3s ease-out forwards;
         }
+
+        /* ==========================================
+           ✅ Einheitliche Card-Outline – NUR DARK MODE
+           ========================================== */
+        body.dark-mode{
+            --card-outline: #353C6C;
+        }
+
+        /* Alle echten Card-Container, die bereits eine Border haben */
+        body.dark-mode .bg-white.border,
+        body.dark-mode .bg-gray-50.border,
+        body.dark-mode .nav-section,
+        body.dark-mode .bg-gradient-to-br.border,
+        body.dark-mode .bg-gradient-to-r.border{
+            border-color: var(--card-outline) !important;
+        }
+
+        /* Jahresübersicht-Kacheln & Gradient-Cards ohne Border-Klasse */
+        body.dark-mode .bg-gradient-to-br.rounded-lg:not(button):not(h1):not(h2):not(h3):not(h4),
+        body.dark-mode .bg-gradient-to-r.rounded-lg:not(button):not(h1):not(h2):not(h3):not(h4){
+            border: 1px solid var(--card-outline) !important;
+        }
+
+        /* Sicherheit: Tailwind-Status-Border-Klassen im Dark Mode neutralisieren */
+        body.dark-mode .border-blue-200,
+        body.dark-mode .border-red-200,
+        body.dark-mode .border-green-200,
+        body.dark-mode .border-orange-200,
+        body.dark-mode .border-purple-200,
+        body.dark-mode .border-indigo-200,
+        body.dark-mode .border-cyan-200,
+        body.dark-mode .border-emerald-200,
+        body.dark-mode .border-gray-100,
+        body.dark-mode .border-gray-200{
+            border-color: var(--card-outline) !important;
+        }
+
+
+        /* ==========================================
+           PANEL SHADOW SYSTEM (robust, independent of Tailwind)
+           ========================================== */
+        .panel-card{
+            /* Force shadow even if Tailwind shadow-* is present */
+            box-shadow: var(--shadow-lg) !important;
+        }
+        body.dark-mode .panel-card{
+            /* mehr Tiefe im Dark Mode, ohne Glow */
+            box-shadow: 0 14px 28px rgba(0,0,0,0.45) !important;
+        }
+
+    
+/* ========================================
+   Notification Upgrade (non-invasive)
+   ======================================== */
+.toast-notification {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    padding: 14px 22px;
+    border-radius: 14px;
+    font-weight: 600;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.28);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    animation: slideDown 0.25s ease-out;
+}
+
+.toast-success {
+    background: rgba(16,185,129,0.95);
+    color: #fff;
+}
+
+.toast-error {
+    background: rgba(239,68,68,0.95);
+    color: #fff;
+}
+
+body.dark-mode .toast-success {
+    background: rgba(16,185,129,0.9);
+}
+
+body.dark-mode .toast-error {
+    background: rgba(239,68,68,0.9);
+}
+
+
+/* ========================================
+   Mobile Centered Toast Fix
+   ======================================== */
+@media (max-width: 768px) {
+    .toast-notification {
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: calc(100% - 40px);
+        text-align: center;
+    }
+}
+
 </style>
 </head>
 <body>
@@ -5875,6 +5993,7 @@ migrateData(fromVersion, toVersion) {
                             if (this.activeTab === 'dashboard') {
                                 this.renderHeatmap();
                                 this.renderSankey();
+                                this.createYearlyCharts(); // Dashboard uses yearly charts too
                             } else if (this.activeTab === 'year') {
                                 this.createYearlyCharts();
                             } else if (this.activeTab === 'investments') {
@@ -6259,7 +6378,7 @@ migrateData(fromVersion, toVersion) {
                             </div>
 
                             <!-- ${icons.smartphone} CLOUD SECTION - Mobile optimiert -->
-                            <div class="nav-section bg-white rounded-2xl border border-gray-100 p-4 md:p-6 mb-6">
+                            <div class="nav-section bg-white rounded-2xl border border-gray-100 p-4 md:p-6 mb-6 panel-card">
                                 <!-- Mobile: Collapsible Header -->
                                 <div class="md:hidden">
                                     <button onclick="const content = this.nextElementSibling; const chevron = this.querySelector('.chevron'); content.classList.toggle('hidden'); chevron.classList.toggle('rotate-180');" 
@@ -6361,7 +6480,7 @@ migrateData(fromVersion, toVersion) {
                             </div>
 
                             <!-- 👥 USER TABS - Haushalt Navigation -->
-                            <div class="nav-section bg-white rounded-2xl border border-gray-100 p-4 mb-6">
+                            <div class="nav-section bg-white rounded-2xl border border-gray-100 p-4 mb-6 panel-card">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center gap-2">
                                         ${icons.home}
@@ -6388,7 +6507,7 @@ migrateData(fromVersion, toVersion) {
                             <div class="md:flex md:gap-6">
                                 <!-- Desktop Sidebar Navigation -->
                                 <aside class="hidden md:block md:w-72 lg:w-80 shrink-0">
-                                    <div class="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm sticky top-6">
+                                    <div class="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm sticky top-6 panel-card">
                                         <div class="text-xs font-semibold text-gray-500 mb-3">Navigation</div>
                                         <div class="space-y-2">
                                             <button onclick="app.setTab('dashboard')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all shadow-sm ${this.activeTab === 'dashboard' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
@@ -7263,23 +7382,23 @@ migrateData(fromVersion, toVersion) {
                     <!-- Monats-Statistiken am Ende -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl shadow-md border border-blue-200">
-                            <div class="flex items-center gap-2 text-sm text-blue-700 font-semibold mb-1">${icons.briefcase} <span>Einkommen</span></div>
+                            <div class="flex items-start gap-2 text-xs sm:text-sm text-blue-700 font-semibold mb-1 leading-tight"><span class="w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">${icons.briefcase}</span> <span class="break-words">Einkommen</span></div>
                             <div class="text-2xl font-bold text-blue-800">${this.formatCurrency(stats.einkommen)}</div>
                         </div>
                         <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl shadow-md border border-green-200">
-                            <div class="flex items-center gap-2 text-sm text-green-700 font-semibold mb-1">${this.getCurrentCurrencyIcon()} <span>Zusatzeinkommen</span></div>
+                            <div class="flex items-start gap-2 text-xs sm:text-sm text-green-700 font-semibold mb-1 leading-tight"><span class="w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">${this.getCurrentCurrencyIcon()}</span> <span class="break-words">Zusatzeinkommen</span></div>
                             <div class="text-2xl font-bold text-green-800">${this.formatCurrency(stats.zusatzeinkommen)}</div>
                         </div>
                         <div class="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-xl shadow-md border border-red-200">
-                            <div class="flex items-center gap-2 text-sm text-red-700 font-semibold mb-1">${icons.home} <span>Fixkosten</span></div>
+                            <div class="flex items-start gap-2 text-xs sm:text-sm text-red-700 font-semibold mb-1 leading-tight"><span class="w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">${icons.home}</span> <span class="break-words">Fixkosten</span></div>
                             <div class="text-2xl font-bold text-red-800">${this.formatCurrency(stats.fixkosten)}</div>
                         </div>
                         <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl shadow-md border border-orange-200">
-                            <div class="flex items-center gap-2 text-sm text-orange-700 font-semibold mb-1">${icons.shoppingCart} <span>Variable Ausgaben</span></div>
+                            <div class="flex items-start gap-2 text-xs sm:text-sm text-orange-700 font-semibold mb-1 leading-tight"><span class="w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">${icons.shoppingCart}</span> <span class="break-words">Variable Ausgaben</span></div>
                             <div class="text-2xl font-bold text-orange-800">${this.formatCurrency(stats.ausgaben)}</div>
                         </div>
                         <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl shadow-md border border-purple-200">
-                            <div class="flex items-center gap-2 text-sm text-purple-700 font-semibold mb-1">${icons.barChart} <span>Sparraten</span></div>
+                            <div class="flex items-start gap-2 text-xs sm:text-sm text-purple-700 font-semibold mb-1 leading-tight"><span class="w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">${icons.barChart}</span> <span class="break-words">Sparraten</span></div>
                             <div class="text-2xl font-bold text-purple-800">${this.formatCurrency(monatlicheSparraten)}</div>
                         </div>
                         <div class="bg-gradient-to-br ${stats.verfuegbar >= 0 ? 'from-emerald-50 to-emerald-100 border-emerald-200' : 'from-red-50 to-red-100 border-red-200'} p-6 rounded-xl shadow-md border">
@@ -7289,7 +7408,7 @@ migrateData(fromVersion, toVersion) {
                             </div>
                         </div>
                         <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-xl shadow-md border border-indigo-200 col-span-1 md:col-span-2">
-                            <div class="flex items-center gap-2 text-sm text-indigo-700 font-semibold mb-1">${icons.trendingUp} <span>Sparquote</span></div>
+                            <div class="flex items-start gap-2 text-xs sm:text-sm text-indigo-700 font-semibold mb-1 leading-tight"><span class="w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">${icons.trendingUp}</span> <span class="break-words">Sparquote</span></div>
                             <div class="flex items-center gap-3">
                                 <div class="text-3xl font-bold text-indigo-800">
                                     ${stats.gesamtEinkommen > 0 ? ((stats.verfuegbar / stats.gesamtEinkommen) * 100).toFixed(1) : '0.0'}%
@@ -7313,40 +7432,40 @@ migrateData(fromVersion, toVersion) {
                 const avgSparquote = yearlyStats.sparquoteData.reduce((a, b) => a + b, 0) / 12;
 
                 return `
-                    <div class="flex items-center justify-center gap-4 mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-xl">
-                        <button onclick="app.changeYear(-1)" class="p-2 hover:bg-white rounded-lg transition-colors text-gray-700">
+                    <div class="flex items-center justify-center gap-4 mb-6 bg-white p-4 rounded-xl shadow-md border border-gray-200">
+                        <button onclick="app.changeYear(-1)" class="p-3 hover:bg-gray-100 rounded-lg transition-colors text-gray-700">
                             ${icons.chevronLeft}
                         </button>
-                        <div class="text-2xl font-bold text-gray-800 min-w-[200px] text-center">
+                        <div class="text-2xl font-bold text-gray-800 min-w-[200px] sm:min-w-[280px] text-center">
                             ${this.currentYear}
                         </div>
-                        <button onclick="app.changeYear(1)" class="p-2 hover:bg-white rounded-lg transition-colors text-gray-700">
+                        <button onclick="app.changeYear(1)" class="p-3 hover:bg-gray-100 rounded-lg transition-colors text-gray-700">
                             ${icons.chevronRight}
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl shadow-md border border-blue-200">
-                            <div class="flex items-center gap-2 text-sm text-blue-700 font-semibold mb-1">${this.getCurrentCurrencyIcon()} <span>Gesamt Einkommen</span></div>
+                            <div class="text-xs sm:text-sm text-blue-700 font-semibold mb-1"><div class="flex items-center gap-1.5"><span class="shrink-0">${this.getCurrentCurrencyIcon()}</span><span class="break-all">Gesamt Einkommen</span></div></div>
                             <div class="text-2xl font-bold text-blue-800">${this.formatCurrency(totalGesamtEinkommen)}</div>
                             <div class="text-xs text-blue-600 mt-1">∅ ${(totalGesamtEinkommen / 12).toFixed(2)} €/Monat</div>
                         </div>
                         <div class="bg-gradient-to-br from-cyan-50 to-cyan-100 p-6 rounded-xl shadow-md border border-cyan-200">
-                            <div class="flex items-center gap-2 text-sm text-cyan-700 font-semibold mb-1">${this.getCurrentCurrencyIcon()} <span>Zusatzeinkommen</span></div>
+                            <div class="text-xs sm:text-sm text-cyan-700 font-semibold mb-1"><div class="flex items-center gap-1.5"><span class="shrink-0">${this.getCurrentCurrencyIcon()}</span><span class="break-all">Zusatz&shy;einkommen</span></div></div>
                             <div class="text-2xl font-bold text-cyan-800">${this.formatCurrency(yearlyStats.totalZusatzeinkommen)}</div>
                             <div class="text-xs text-cyan-600 mt-1">∅ ${(yearlyStats.totalZusatzeinkommen / 12).toFixed(2)} €/Monat</div>
                         </div>
                         <div class="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-xl shadow-md border border-red-200">
-                            <div class="flex items-center gap-2 text-sm text-red-700 font-semibold mb-1">${icons.home} <span>Gesamt Fixkosten</span></div>
+                            <div class="text-xs sm:text-sm text-red-700 font-semibold mb-1"><div class="flex items-center gap-1.5"><span class="shrink-0">${icons.home}</span><span class="break-all">Gesamt Fixkosten</span></div></div>
                             <div class="text-2xl font-bold text-red-800">${this.formatCurrency(yearlyStats.totalFixkosten)}</div>
                             <div class="text-xs text-red-600 mt-1">∅ ${(yearlyStats.totalFixkosten / 12).toFixed(2)} €/Monat</div>
                         </div>
                         <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl shadow-md border border-orange-200">
-                            <div class="flex items-center gap-2 text-sm text-orange-700 font-semibold mb-1">${icons.shoppingCart} <span>Gesamt Ausgaben</span></div>
+                            <div class="text-xs sm:text-sm text-orange-700 font-semibold mb-1"><div class="flex items-center gap-1.5"><span class="shrink-0">${icons.shoppingCart}</span><span class="break-all">Gesamt Ausgaben</span></div></div>
                             <div class="text-2xl font-bold text-orange-800">${this.formatCurrency(yearlyStats.totalAusgaben)}</div>
                             <div class="text-xs text-orange-600 mt-1">∅ ${(yearlyStats.totalAusgaben / 12).toFixed(2)} €/Monat</div>
                         </div>
-                        <div class="bg-gradient-to-br ${yearlyStats.totalVerfuegbar >= 0 ? 'from-green-50 to-green-100 border-green-200' : 'from-red-50 to-red-100 border-red-200'} p-6 rounded-xl shadow-md border">
+                        <div class="md:col-span-2 bg-gradient-to-br ${yearlyStats.totalVerfuegbar >= 0 ? 'from-green-50 to-green-100 border-green-200' : 'from-red-50 to-red-100 border-red-200'} p-6 rounded-xl shadow-md border">
                             <div class="flex items-center gap-2 text-sm font-semibold ${yearlyStats.totalVerfuegbar >= 0 ? 'text-green-700' : 'text-red-700'} mb-1">${icons.gem} <span>Gespart</span></div>
                             <div class="text-2xl font-bold ${yearlyStats.totalVerfuegbar >= 0 ? 'text-green-800' : 'text-red-800'}">${this.formatCurrency(yearlyStats.totalVerfuegbar)}</div>
                             <div class="text-xs ${yearlyStats.totalVerfuegbar >= 0 ? 'text-green-600' : 'text-red-600'} mt-1">∅ ${avgSparquote.toFixed(1)}% Sparquote</div>
@@ -7385,15 +7504,15 @@ migrateData(fromVersion, toVersion) {
                 return `
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-xl shadow-md border border-indigo-200">
-                            <div class="flex items-center gap-2 text-sm text-indigo-700 font-semibold mb-1">${icons.gem} <span>Gesamtvermögen</span></div>
+                            <div class="flex items-start gap-2 text-xs sm:text-sm text-indigo-700 font-semibold mb-1 leading-tight"><span class="w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">${icons.gem}</span> <span class="break-words">Gesamtvermögen</span></div>
                             <div class="text-3xl font-bold text-indigo-800">${this.formatCurrency(gesamtAnlagen)}</div>
                         </div>
                         <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl shadow-md border border-green-200">
-                            <div class="flex items-center gap-2 text-sm text-green-700 font-semibold mb-1">${icons.barChart} <span>Monatliche Sparrate</span></div>
+                            <div class="flex items-start gap-2 text-xs sm:text-sm text-green-700 font-semibold mb-1 leading-tight"><span class="w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">${icons.barChart}</span> <span class="break-words">Monatliche Sparrate</span></div>
                             <div class="text-3xl font-bold text-green-800">${this.formatCurrency(monatlicheRate)}</div>
                         </div>
                         <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl shadow-md border border-purple-200">
-                            <div class="flex items-center gap-2 text-sm text-purple-700 font-semibold mb-1">${icons.briefcase} <span>Aktive Konten</span></div>
+                            <div class="flex items-start gap-2 text-xs sm:text-sm text-purple-700 font-semibold mb-1 leading-tight"><span class="w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">${icons.briefcase}</span> <span class="break-words">Aktive Konten</span></div>
                             <div class="text-3xl font-bold text-purple-800">${this.sparkonten.length}</div>
                         </div>
                     </div>
