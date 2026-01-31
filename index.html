@@ -8713,53 +8713,157 @@ function fillFromOCR(data){
 }
 
 function extractTotal(text){
-    const lines = text.split("\n").map(l=>l.trim());
-    const keys=["SUMME","GESAMT","ZU ZAHLEN","ZAHLEN","ENDSUMME","GESAMTBETRAG","BETRAG"];
+    const raw = String(text || "");
+    const lines = raw.split("\n").map(l => l.trim()).filter(Boolean);
 
-    for(const line of lines){
-        const u=line.toUpperCase();
-        if(keys.some(k=>u.includes(k))){
-            const m=line.match(/\d+[,.]\d{2}/);
-            if(m) return parseFloat(m[0].replace(",", "."));
+    // Priority keywords for "final" totals
+    const priority = [
+        "ZU ZAHLEN","ZUZAHLEN","TOTAL","GESAMT","GESAMTBETRAG","ENDSUMME","SUMME","BRUTTO","BETRAG"
+    ];
+
+    // Helper: extract first currency-like number in a line
+    const pickAmount = (line) => {
+        // match 1.234,56 or 1234,56 or 80,20
+        const m = line.match(/(?:\d{1,3}(?:[.\s]\d{3})*|\d+)[,\.]\d{2}/);
+        if(!m) return null;
+        const v = m[0].replace(/\s/g,"").replace(/\./g, (x, i, s)=> (s.includes(",") ? "" : ".")); // keep dot decimals if no comma
+        return parseFloat(v.replace(",", "."));
+    };
+
+    // Pass 1: keyword lines (priority order)
+    for(const key of priority){
+        for(let i=0;i<lines.length;i++){
+            const u = lines[i].toUpperCase().replace(/\s+/g," ");
+            if(u.includes(key)){
+                const v = pickAmount(lines[i]);
+                if(v!=null && Number.isFinite(v)) return v;
+
+                // Sometimes the amount is on the next line
+                if(i+1<lines.length){
+                    const v2 = pickAmount(lines[i+1]);
+                    if(v2!=null && Number.isFinite(v2)) return v2;
+                }
+            }
         }
     }
+
+    // Pass 2: look for "EUR" + amount near bottom (often totals section)
+    const tail = lines.slice(Math.max(0, lines.length - Math.max(12, Math.floor(lines.length*0.25))));
+    for(const line of tail){
+        const u = line.toUpperCase();
+        if(u.includes("EUR") || u.includes("€")){
+            const v = pickAmount(line);
+            if(v!=null && Number.isFinite(v)) return v;
+        }
+    }
+
     return null;
 }
 
-function normalizeMerchant(name){
-    const u = String(name || "").toUpperCase();
+// --- Merchant detection (high-end) ---
 
-    // Common retailers (extend anytime)
-    const map = [
-        ["REWE", "REWE"],
-        ["ALDI", "ALDI"],
-        ["LIDL", "LIDL"],
-        ["NETTO", "NETTO"],
-        ["KAUFLAND", "KAUFLAND"],
-        ["EDEKA", "EDEKA"],
-        ["PENNY", "PENNY"],
-        ["ROSSMANN", "ROSSMANN"],
-        ["DM", "dm"],
-        ["MÜLLER", "Müller"],
-        ["MUELLER", "Müller"],
-        ["IKEA", "IKEA"],
-        ["OBI", "OBI"],
-        ["BAUHAUS", "BAUHAUS"],
-        ["TOOM", "toom"],
-        ["H&M", "H&M"],
-        ["HM", "H&M"],
-        ["ZARA", "ZARA"],
-        ["PRIMARK", "PRIMARK"],
-        ["MEDIA MARKT", "MediaMarkt"],
-        ["MEDIAMARKT", "MediaMarkt"],
-        ["SATURN", "Saturn"],
-        ["AMAZON", "Amazon"],
-        ["APOTHEKE", "Apotheke"],
-    ];
-    for(const [k,v] of map){
-        if(u.includes(k)) return v;
+function _normLine(s){
+    return String(s||"")
+        .replace(/\u00A0/g," ")
+        .replace(/[|]/g," ")
+        .replace(/\s+/g," ")
+        .trim();
+}
+
+function _fold(s){
+    // Uppercase + light de-accent for common German chars
+    return _normLine(s)
+        .toUpperCase()
+        .replace(/Ä/g,"AE").replace(/Ö/g,"OE").replace(/Ü/g,"UE")
+        .replace(/ß/g,"SS")
+        .replace(/[^A-Z0-9 ]/g," ")
+        .replace(/\s+/g," ")
+        .trim();
+}
+
+function _alnumTight(s){
+    return _fold(s).replace(/\s+/g,"");
+}
+
+function _levenshtein(a,b){
+    a = String(a||""); b = String(b||"");
+    const m=a.length, n=b.length;
+    if(m===0) return n;
+    if(n===0) return m;
+    const dp = new Array(n+1);
+    for(let j=0;j<=n;j++) dp[j]=j;
+    for(let i=1;i<=m;i++){
+        let prev = dp[0];
+        dp[0]=i;
+        for(let j=1;j<=n;j++){
+            const tmp = dp[j];
+            const cost = a[i-1]===b[j-1] ? 0 : 1;
+            dp[j]=Math.min(dp[j]+1, dp[j-1]+1, prev+cost);
+            prev = tmp;
+        }
     }
-    return String(name || "").trim();
+    return dp[n];
+}
+
+function _similarity(a,b){
+    a=_alnumTight(a); b=_alnumTight(b);
+    if(!a || !b) return 0;
+    const dist = _levenshtein(a,b);
+    return 1 - dist / Math.max(a.length, b.length);
+}
+
+function normalizeMerchant(name){
+    const line = _normLine(name);
+    if(!line) return "";
+
+    // Canonical retailers + aliases (extend anytime)
+    const RETAILERS = [
+        {canon:"Hornbach", aliases:["HORNBACH","HORN BACH","HORNACH","HORNBAH","HORN BAH","BAUMARKT AG HORNBACH"]},
+        {canon:"REWE", aliases:["REWE"]},
+        {canon:"ALDI", aliases:["ALDI","ALDl","ALD1"]},
+        {canon:"LIDL", aliases:["LIDL","LIDl"]},
+        {canon:"EDEKA", aliases:["EDEKA"]},
+        {canon:"Kaufland", aliases:["KAUFLAND"]},
+        {canon:"NETTO", aliases:["NETTO","NETTO MARKEN-DISCOUNT","NETTO MARKENDISCOUNT"]},
+        {canon:"PENNY", aliases:["PENNY"]},
+        {canon:"Rossmann", aliases:["ROSSMANN"]},
+        {canon:"dm", aliases:["DM","D M","DM-DROGERIE","DM DROGERIE"]},
+        {canon:"Müller", aliases:["MÜLLER","MUELLER","MULLER"]},
+        {canon:"IKEA", aliases:["IKEA"]},
+        {canon:"OBI", aliases:["OBI"]},
+        {canon:"BAUHAUS", aliases:["BAUHAUS"]},
+        {canon:"toom", aliases:["TOOM"]},
+        {canon:"H&M", aliases:["H&M","HM","H UND M"]},
+        {canon:"ZARA", aliases:["ZARA"]},
+        {canon:"PRIMARK", aliases:["PRIMARK"]},
+        {canon:"MediaMarkt", aliases:["MEDIA MARKT","MEDIAMARKT"]},
+        {canon:"Saturn", aliases:["SATURN"]},
+        {canon:"Amazon", aliases:["AMAZON"]},
+        {canon:"Apotheke", aliases:["APOTHEKE"]},
+    ];
+
+    const folded = _fold(line);
+
+    // Substring hard matches first
+    for(const r of RETAILERS){
+        for(const a of r.aliases){
+            if(folded.includes(_fold(a))) return r.canon;
+        }
+    }
+
+    // Fuzzy: best similarity across aliases
+    let best = {canon:"", score:0};
+    for(const r of RETAILERS){
+        for(const a of r.aliases){
+            const s = _similarity(folded, a);
+            if(s > best.score){
+                best = {canon:r.canon, score:s};
+            }
+        }
+    }
+    if(best.score >= 0.84) return best.canon;
+
+    return line;
 }
 
 function detectMerchant(fullText){
@@ -8768,61 +8872,89 @@ function detectMerchant(fullText){
 
     const lines = text
         .split("\n")
-        .map(l => l.trim())
+        .map(_normLine)
         .filter(l => l.length > 1);
 
-    // 1) Hard match first (best accuracy)
-    for(const l of lines){
-        const n = normalizeMerchant(l);
-        // normalizeMerchant returns changed value when it matched
-        if(n && n !== l.trim()) return n;
-    }
+    if(!lines.length) return "";
 
-    // 2) Heuristics: first line that looks like a shop name (not totals/address/meta)
     const isBad = (l) => {
-        const u = l.toUpperCase();
+        const u = _fold(l);
 
         // Skip obvious non-merchant lines
         const badTokens = [
-            "SUMME","GESAMT","ZU ZAHLEN","TOTAL","ENDSUMME",
-            "MWST","UST","USt","STNR","ST.-NR","STEUER",
-            "KASSE","BON","RECHNUNG","BELEG","VIELEN DANK",
+            "SUMME","GESAMT","ZU ZAHLEN","ZUZAHLEN","TOTAL","ENDSUMME","BRUTTO","NETTO",
+            "MWST","UST","STEUER","KASSE","BON","RECHNUNG","BELEG","KUNDENBELEG","VIELEN DANK",
             "TEL","TELEFON","WWW","HTTP","HTTPS","EMAIL",
-            "KARTENZAHLUNG","EC","VISA","MASTERCARD",
-            "DATUM","UHR","UHRZEIT"
+            "KARTENZAHLUNG","EC","VISA","MASTERCARD","GIROCARD","KARTE","CONTACTLESS",
+            "DATUM","UHR","UHRZEIT","BELEG-NR","BELEGNR","TRACE","TERMINAL","POS","NR","VORGANG"
         ];
         if(badTokens.some(t => u.includes(t))) return true;
 
-        // Skip lines that are mostly numbers / IDs / times
+        // mostly numbers / ids / times
         const digits = (l.match(/\d/g) || []).length;
         const letters = (l.match(/[A-Za-zÄÖÜäöüß]/g) || []).length;
-        if(digits >= 6 && letters <= 2) return true;
+        if(digits >= 7 && letters <= 2) return true;
 
-        // Skip postal code / address-y lines
+        // address-like
         if(/\b\d{5}\b/.test(l)) return true;
-        if(/\b(STR\.|STRASSE|STRASSE|WEG|PLATZ|ALLEE|RING|GASSE)\b/i.test(l)) return true;
-
-        // Too long and address-like
-        if(l.length > 42 && digits >= 4) return true;
+        if(/\b(STR\.|STRASSE|STRASSE|WEG|PLATZ|ALLEE|RING|GASSE|HAUSNR|NR\.)\b/i.test(l)) return true;
 
         return false;
     };
 
+    // 0) Fast path: any line matches known retailer (fuzzy/hard)
+    let best = {name:"", score:0};
     for(const l of lines){
         if(isBad(l)) continue;
+        const n = normalizeMerchant(l);
+        if(n && n !== l) {
+            // normalizeMerchant matched hard or fuzzy
+            return n;
+        }
+        // keep a fuzzy candidate even if normalize returned same line
+        const candidate = normalizeMerchant(l);
+        // candidate might be same line; we still can compute similarity to "Hornbach" via alias in normalizeMerchant,
+        // but normalizeMerchant only returns canon when threshold hit. So nothing here.
+    }
 
-        // must have some letters
+    // 1) Company suffix heuristic (AG/GMBH/etc.) in the middle of receipt, not in header payment section
+    const suffixRe = /\b(AG|GMBH|MBH|KG|E\.K\.|EK|OHG|GMBH\s*&\s*CO\.?\s*KG)\b/i;
+    for(const l of lines){
+        if(isBad(l)) continue;
+        if(suffixRe.test(l)){
+            const canon = normalizeMerchant(l);
+            if(canon && canon !== l) return canon;
+
+            // strip suffix and try again
+            const stripped = _normLine(l.replace(suffixRe, "").trim());
+            const canon2 = normalizeMerchant(stripped);
+            return canon2 || stripped || canon || l;
+        }
+    }
+
+    // 2) Heuristic scan: ignore top ~30% (often payment/totals), pick first plausible shop line
+    const startIdx = Math.max(0, Math.min(lines.length-1, Math.floor(lines.length * 0.30)));
+    for(let i=startIdx; i<lines.length; i++){
+        const l = lines[i];
+        if(isBad(l)) continue;
         if(!/[A-Za-zÄÖÜäöüß]/.test(l)) continue;
 
-        // avoid very generic words
-        if(l.trim().length < 2) continue;
+        // avoid generic single words
+        const u=_fold(l);
+        if(u==="KUNDE" || u==="KUNDEN" || u==="BELEG") continue;
 
         return normalizeMerchant(l);
     }
 
-    // Fallback: first non-empty line
+    // 3) Fallback: first plausible line anywhere
+    for(const l of lines){
+        if(isBad(l)) continue;
+        if(/[A-Za-zÄÖÜäöüß]/.test(l)) return normalizeMerchant(l);
+    }
+
     return normalizeMerchant(lines[0] || "");
 }
+
 
 
 function parseReceipt(text){
