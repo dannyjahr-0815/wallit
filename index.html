@@ -8592,12 +8592,12 @@ async function openBrowserScanner(){
                 <img id="scanPreviewImg" alt="Vorschau" style="display:none;width:100%;height:auto;"/>
             </div>
 
-            <input id="scanFileInput" type="file" accept="image/*" capture="environment" style="position:fixed;left:-9999px;top:auto;width:1px;height:1px;opacity:0;" />
+            <input id="scanFileInput" type="file" accept="image/*" capture="environment" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;opacity:0;" />
 
             <p id="scannerStatus" style="margin-top:10px;font-size:13px;opacity:.9;">Bereit. Foto aufnehmen.</p>
 
             <div style="display:flex;gap:10px;margin-top:12px;">
-                <button id="btnTakePhoto" class="btn-primary w-full" type="button">Foto aufnehmen</button>
+                <label id="btnTakePhotoLabel" for="scanFileInput" class="btn-primary w-full" style="display:flex;align-items:center;justify-content:center;cursor:pointer;">Foto aufnehmen</label>
                 <button id="btnDoScan" class="btn-secondary w-full" type="button" disabled>Jetzt scannen</button>
             </div>
 
@@ -8615,8 +8615,8 @@ async function openBrowserScanner(){
     const fileInput = modal.querySelector("#scanFileInput");
     const previewImg = modal.querySelector("#scanPreviewImg");
     const status = modal.querySelector("#scannerStatus");
-    const btnTake = modal.querySelector("#btnTakePhoto");
     const btnScan = modal.querySelector("#btnDoScan");
+    const btnTakeLabel = modal.querySelector("#btnTakePhotoLabel");
 
     const resetState = () => {
         _scannerImageDataUrl = null;
@@ -8627,12 +8627,8 @@ async function openBrowserScanner(){
 
     resetState();
 
-    btnTake.addEventListener("click", () => {
-        // iOS will open native camera; user confirms photo -> fileInput change
-        fileInput.value = "";
-        fileInput.value = "";
-        fileInput.click();
-    });
+    // Reset so selecting the same photo twice still triggers change (iOS/Safari)
+    fileInput.addEventListener("click", () => { fileInput.value = ""; });
 
     fileInput.addEventListener("change", async () => {
         const f = fileInput.files && fileInput.files[0];
@@ -8677,7 +8673,7 @@ async function openBrowserScanner(){
 
         try{
             btnScan.disabled = true;
-            btnTake.disabled = true;
+            btnTakeLabel.style.pointerEvents = "none"; btnTakeLabel.style.opacity = "0.6";
             status.innerText = "OCR läuft…";
 
             // Optional: downscale for speed while keeping readability
@@ -8699,13 +8695,13 @@ async function openBrowserScanner(){
             }else{
                 status.innerText = "Bon erkannt, aber nicht sicher. Bitte Foto näher / heller.";
                 btnScan.disabled = false;
-                btnTake.disabled = false;
+                btnTakeLabel.style.pointerEvents = "auto"; btnTakeLabel.style.opacity = "1";
             }
         }catch(e){
             console.error(e);
             status.innerText = "OCR Fehler. Bitte erneut versuchen";
             btnScan.disabled = false;
-            btnTake.disabled = false;
+            btnTakeLabel.style.pointerEvents = "auto"; btnTakeLabel.style.opacity = "1";
         }finally{
             // Drop image from memory ASAP
             _scannerImageDataUrl = null;
