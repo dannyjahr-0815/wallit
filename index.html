@@ -1722,6 +1722,17 @@ body.dark-mode .toast-error{ background: rgba(239,68,68,0.90); }
     to{ opacity:1; transform: scale(1); }
 }
 
+
+/* ==========================================
+   Light Mode: Outlines for KPI tiles (Year overview)
+   ========================================== */
+.fm-outline {
+    border: 1px solid var(--border-light);
+}
+body.dark-mode .fm-outline {
+    border-color: #353C6C !important; /* keep consistent with dark-mode card outline system */
+}
+
 </style>
 </head>
 <body>
@@ -3703,33 +3714,23 @@ migrateData(fromVersion, toVersion) {
 
             showNotification(message, type = 'info', duration = 3000) {
                 // Remove existing notification
-                document.querySelector('.toast-notification')?.remove();
+                document.querySelector('.toast-container')?.remove();
+                
+                // Create container
+                const container = document.createElement('div');
+                container.className = 'toast-container';
                 
                 // Create notification
                 const toast = document.createElement('div');
-                toast.className = 'toast-notification';
+                toast.className = 'toast-notification toast-' + (type === 'error' ? 'error' : 'success');
+                toast.textContent = message;
                 
-                const colors = {
-                    success: 'bg-green-500',
-                    error: 'bg-red-500',
-                    warning: 'bg-orange-500',
-                    info: 'bg-blue-500'
-                };
-                
-                const bgColor = colors[type] || colors.info;
-                
-                toast.innerHTML = `
-                    <div class="${bgColor} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3" style="min-width: 280px; max-width: 90vw;">
-                        <span class="flex-1">${message}</span>
-                        <button onclick="this.parentElement.parentElement.remove()" class="text-white hover:text-gray-200 font-bold text-lg">${icons.x}</button>
-                    </div>
-                `;
-                
-                document.body.appendChild(toast);
+                container.appendChild(toast);
+                document.body.appendChild(container);
                 
                 // Auto-remove after duration
                 setTimeout(() => {
-                    toast.remove();
+                    container.remove();
                 }, duration);
             }
 
@@ -5844,7 +5845,7 @@ migrateData(fromVersion, toVersion) {
                     <div class="modal-content">
                         <h3 class="flex items-center gap-2 text-2xl font-bold text-gray-800 mb-4">${icons.briefcase} <span>Einkommen bearbeiten</span></h3>
                         <div class="space-y-4">
-                            <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-blue-200">
                                 <span style="font-size: 24px;">${user.emoji}</span>
                                 <div>
                                     <div class="font-semibold text-gray-800">${user.name}</div>
@@ -6862,7 +6863,7 @@ migrateData(fromVersion, toVersion) {
                                     <div class="text-sm text-gray-600 mb-2">Gespart</div>
                                     <div class="text-2xl font-bold text-green-700">${this.formatCurrency(dash.yearly.totalSaved)}</div>
                                 </div>
-                                <div class="text-center p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg">
+                                <div class="text-center p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg border border-purple-200">
                                     <div class="text-sm text-gray-600 mb-2">Ø Sparquote</div>
                                     <div class="text-2xl font-bold text-indigo-700">${dash.yearly.avgSavingsRate.toFixed(1)}%</div>
                                 </div>
