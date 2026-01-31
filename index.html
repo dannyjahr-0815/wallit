@@ -1874,23 +1874,6 @@ body.dark-mode .notification-modal .bg-blue-600{
 }
 
 </style>
-
-<style>
-.secondary-btn{
-  background: rgba(15,23,42,.08);
-  color:#0f172a;
-  border: 1px solid rgba(15,23,42,.10);
-  border-radius: 12px;
-  padding: 12px 14px;
-  font-weight: 600;
-}
-body.dark-mode .secondary-btn{
-  background: rgba(255,255,255,.10);
-  color:#ffffff;
-  border-color: rgba(255,255,255,.14);
-}
-</style>
-
 </head>
 <body>
     <div id="app"></div>
@@ -8576,250 +8559,222 @@ migrateData(fromVersion, toVersion) {
     </div>
 
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
-/**
- * FIX: Worker load failed because corePath was incorrect.
- * For Tesseract.js v5, core comes from tesseract.js-core and corePath must be a DIRECTORY containing core variants.
- * Sources: tesseract.js v5 change notes (corePath directory) + jsDelivr tesseract.js-core package.
- */
-let receiptStream = null;
-let worker = null;
-let workerLang = null;
-
-const WORKER_PATH = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js";
-// corePath must point to a directory containing these files:
-// tesseract-core.wasm.js, tesseract-core-simd.wasm.js, tesseract-core-lstm.wasm.js, tesseract-core-simd-lstm.wasm.js
-const CORE_PATH_DIR = "https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.0";
-const LANG_PATH_DIR = "https://tessdata.projectnaptha.com/4.0.0";
-
-function normalizeMerchant(name){
-  const u = String(name||"").toUpperCase();
-  if(u.includes("REWE")) return "REWE";
-  if(u.includes("ALDI")) return "ALDI";
-  if(u.includes("LIDL")) return "LIDL";
-  if(u.includes("NETTO")) return "NETTO";
-  if(u.includes("KAUFLAND")) return "KAUFLAND";
-  if(u.includes("EDEKA")) return "EDEKA";
-  return (name||"").trim();
-}
-function extractDate(text){
-  const m = text.match(/\d{2}[.\-\/]\d{2}[.\-\/]\d{4}/);
-  if(!m) return "";
-  const s = m[0].replace(/\//g,".").replace(/-/g,".");
-  const [d,mo,y] = s.split(".");
-  return `${y}-${mo}-${d}`;
-}
-function extractTotal(text){
-  const lines = text.split("\n").map(l=>l.trim()).filter(Boolean);
-  const keys = ["SUMME","GESAMT","ZU ZAHLEN","ENDSUMME","GESAMTBETRAG","TOTAL","BETRAG"];
-  for(const line of lines){
-    const u=line.toUpperCase();
-    if(keys.some(k=>u.includes(k))){
-      const m=line.match(/\d+[,.]\d{2}/);
-      if(m) return parseFloat(m[0].replace(",", "."));
-    }
-  }
-  const amounts = text.match(/\d+[,.]\d{2}/g)||[];
-  if(!amounts.length) return null;
-  return Math.max(...amounts.map(a=>parseFloat(a.replace(",", "."))));
-}
-function fillFields({merchant, dateISO, total}){
-  const beschreibung = document.querySelector("input[placeholder='Beschreibung']");
-  const betrag = document.querySelector("input[placeholder='Betrag']");
-  const datum = document.querySelector("input[type='date']");
-  if(beschreibung && merchant) beschreibung.value = merchant;
-  if(betrag && total != null) betrag.value = Number(total).toFixed(2);
-  if(datum && dateISO) datum.value = dateISO;
-}
-function stopCamera(){
-  if(receiptStream){
-    receiptStream.getTracks().forEach(t=>t.stop());
-    receiptStream = null;
-  }
-}
-function closeReceiptModal(){
-  stopCamera();
-  document.getElementById("receiptPhotoModal")?.remove();
-}
-
-async function ensureWorker(statusEl){
-  if(worker) return true;
-
-  statusEl.textContent = "OCR-Engine wird geladen…";
-
-  try{
-    worker = await Tesseract.createWorker({
-      logger: m => {
-        if(m.status && typeof m.progress === "number"){
-          const p = Math.round(m.progress*100);
-          if(p > 0 && p < 100) statusEl.textContent = `OCR läuft… ${p}%`;
-        }
-      },
-      workerPath: WORKER_PATH,
-      corePath: CORE_PATH_DIR,
-      langPath: LANG_PATH_DIR
-    });
-  }catch(e){
-    console.error(e);
-    statusEl.textContent = "OCR Fehler: Worker/Core konnte nicht geladen werden (Netzwerk/CORS).";
-    return false;
-  }
-
-  try{
-    await worker.loadLanguage("deu");
-    await worker.initialize("deu");
-    workerLang = "deu";
-    return true;
-  }catch(e1){
-    console.warn("deu failed, fallback eng", e1);
-    try{
-      await worker.loadLanguage("eng");
-      await worker.initialize("eng");
-      workerLang = "eng";
-      statusEl.textContent = "Hinweis: Deutsch-Modell nicht ladbar – nutze Fallback (ENG).";
-      return true;
-    }catch(e2){
-      console.error(e2);
-      statusEl.textContent = "OCR Fehler: Sprache konnte nicht geladen werden.";
-      return false;
-    }
-  }
-}
-
-function captureDownscaled(video, maxW=1280){
-  const vw = video.videoWidth, vh = video.videoHeight;
-  const scale = Math.min(1, maxW / vw);
-  const cw = Math.floor(vw * scale);
-  const ch = Math.floor(vh * scale);
-  const c = document.createElement("canvas");
-  c.width = cw; c.height = ch;
-  c.getContext("2d").drawImage(video, 0, 0, cw, ch);
-  return c;
-}
-function crop(src, y, h){
-  const c = document.createElement("canvas");
-  c.width = src.width;
-  c.height = h;
-  c.getContext("2d").drawImage(src, 0, y, src.width, h, 0, 0, src.width, h);
-  return c;
-}
+let browserStream = null;
+let scanning = false;
 
 async function openBrowserScanner(){
-  const isLocalhost = location.hostname === "localhost" || location.hostname === "127.0.0.1";
-  if(location.protocol !== "https:" && !isLocalhost){
-    alert("Kamera benötigt HTTPS oder localhost.");
-    return;
-  }
 
-  const modal = document.createElement("div");
-  modal.id = "receiptPhotoModal";
-  modal.className = "notification-modal";
-  modal.style.display = "flex";
-  modal.innerHTML = `
-    <div class="modal-content" style="max-width:560px;">
-      <h3>Kassenbon scannen</h3>
-      <video id="receiptVideo" autoplay playsinline muted style="width:100%;border-radius:12px;background:#0b1220;"></video>
+    const modal = document.createElement("div");
+    modal.className = "notification-modal";
+    modal.style.display = "flex";
 
-      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
-        <button id="takeReceiptPhoto" class="btn-primary w-full" type="button">Foto aufnehmen</button>
-        <button id="cancelReceiptPhoto" class="secondary-btn w-full" type="button">Abbrechen</button>
-      </div>
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3>Kassenbon scannen</h3>
+            <video id="scannerVideo" autoplay playsinline style="width:100%;border-radius:12px;"></video>
+            <p id="scannerStatus" style="margin-top:10px;font-size:13px;">Kamera wird gestartet...</p>
+            <button onclick="closeBrowserScanner()" class="btn-primary w-full mt-4">Abbrechen</button>
+        </div>
+    `;
 
-      <p id="receiptStatus" style="margin-top:10px;font-size:13px;opacity:.85;">
-        Tipp: Bon flach hinlegen, gutes Licht, Kamera ruhig halten.
-      </p>
-      <p style="margin-top:6px;font-size:12px;opacity:.65;">
-        Hinweis: Foto wird nicht gespeichert (nur RAM, danach sofort gelöscht).
-      </p>
-    </div>
-  `;
-  document.body.appendChild(modal);
+    document.body.appendChild(modal);
 
-  const video = document.getElementById("receiptVideo");
-  const status = document.getElementById("receiptStatus");
-  document.getElementById("cancelReceiptPhoto").addEventListener("click", closeReceiptModal);
+    const video = document.getElementById("scannerVideo");
+    const status = document.getElementById("scannerStatus");
 
-  try{
-    receiptStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: "environment" } },
-      audio: false
-    });
-    video.srcObject = receiptStream;
-    await new Promise(resolve => {
-      const done = ()=>{ video.removeEventListener("loadedmetadata", done); resolve(); };
-      video.addEventListener("loadedmetadata", done);
-      setTimeout(resolve, 900);
-    });
-    status.textContent = "Bereit. Tippe auf „Foto aufnehmen“.";
-  }catch(e){
-    console.error(e);
-    status.textContent = "OCR Fehler: Kamera-Zugriff nicht möglich (Berechtigung?).";
-    return;
-  }
-
-  document.getElementById("takeReceiptPhoto").addEventListener("click", async () => {
     try{
-      if(!video.videoWidth || !video.videoHeight){
-        status.textContent = "Warte auf Kamerabild…";
-        return;
-      }
+        browserStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } }
+        });
 
-      const ok = await ensureWorker(status);
-      if(!ok) return;
+        video.srcObject = browserStream;
+        scanning = true;
+        status.innerText = "Bon wird erkannt...";
+        scanLoop(video, status);
 
-      status.textContent = "Foto erfasst…";
-
-      const full = captureDownscaled(video, 1280);
-      const topH = Math.floor(full.height * 0.22);
-      const botH = Math.floor(full.height * 0.45);
-      const botY = full.height - botH;
-
-      const topC = crop(full, 0, topH);
-      const botC = crop(full, botY, botH);
-
-      // free memory early
-      full.width = 1; full.height = 1;
-
-      status.textContent = "OCR läuft…";
-
-      const topUrl = topC.toDataURL("image/jpeg", 0.85);
-      const botUrl = botC.toDataURL("image/jpeg", 0.85);
-
-      const topRes = await worker.recognize(topUrl);
-      const botRes = await worker.recognize(botUrl);
-
-      // clear canvases
-      topC.width = 1; topC.height = 1;
-      botC.width = 1; botC.height = 1;
-
-      stopCamera();
-
-      const topText = topRes?.data?.text || "";
-      const botText = botRes?.data?.text || "";
-
-      const topLines = topText.split("\n").map(l=>l.trim()).filter(l=>l.length>2);
-      const merchant = normalizeMerchant(topLines[0] || "");
-      const dateISO = extractDate(topText + "\n" + botText);
-      const total = extractTotal(botText);
-
-      if(merchant || dateISO || total != null){
-        fillFields({merchant, dateISO, total});
-        status.textContent = `Erkannt ✓ (${workerLang || "?"})`;
-        setTimeout(closeReceiptModal, 450);
-      }else{
-        status.textContent = "Keine Summe/Datum erkannt. Bitte näher ran + mehr Licht.";
-      }
-
-    }catch(err){
-      console.error(err);
-      status.textContent = "OCR Fehler: " + (err?.message || String(err));
-      stopCamera();
+    }catch(e){
+        status.innerText = "Kamera-Zugriff nicht möglich.";
     }
-  });
 }
 
-// Button in template calls openBrowserScanner()
+function closeBrowserScanner(){
+    scanning = false;
+    if(browserStream){
+        browserStream.getTracks().forEach(t => t.stop());
+    }
+    document.querySelector(".notification-modal")?.remove();
+}
+
+async function scanLoop(video, status){
+
+    if(!scanning) return;
+
+    // Wait until we have enough video data
+    if(video.readyState < 2){
+        setTimeout(() => scanLoop(video,status), 800);
+        return;
+    }
+
+    // Avoid parallel requests
+    if(scanLoop._busy){
+        setTimeout(() => scanLoop(video,status), 900);
+        return;
+    }
+
+    // Capture bottom part of the receipt (faster + more relevant)
+    const canvas = document.createElement("canvas");
+    const cropHeight = Math.floor(video.videoHeight * 0.45);
+    const cropY = video.videoHeight - cropHeight;
+
+    canvas.width = video.videoWidth;
+    canvas.height = cropHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video,0,cropY,video.videoWidth,cropHeight,0,0,video.videoWidth,cropHeight);
+
+    const dataUrl = canvas.toDataURL("image/jpeg",0.82);
+
+    scanLoop._busy = true;
+    try{
+        status.innerText = "Bon wird erkannt...";
+        const data = await visionOCR(dataUrl);
+
+        // data: { fullText, dateISO, total }
+        if(data && (data.total != null || data.dateISO || data.fullText)){
+            const ok = fillFromOCR(data);
+            if(ok){
+                status.innerText = "Erkannt ✓";
+                setTimeout(closeBrowserScanner, 450);
+                return;
+            }
+        }
+
+        status.innerText = "Nicht sicher – weiter scannen...";
+    }catch(e){
+        console.error(e);
+        status.innerText = "OCR Fehler. Bitte erneut versuchen";
+    }finally{
+        scanLoop._busy = false;
+    }
+
+    setTimeout(() => scanLoop(video,status), 1200);
+}
+
+// === Google Vision (über Cloud Run Function) ===
+const VISION_ENDPOINT = "https://ocr-receipt-74837873538.europe-west3.run.app";
+
+async function visionOCR(imageBase64){
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 20000);
+
+    try{
+        const resp = await fetch(VISION_ENDPOINT, {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ imageBase64 }),
+            signal: controller.signal
+        });
+
+        // Helpful debugging if something goes wrong
+        if(!resp.ok){
+            const txt = await resp.text().catch(()=> "");
+            throw new Error(`Vision HTTP ${resp.status}: ${txt.slice(0,200)}`);
+        }
+
+        return await resp.json();
+    } finally {
+        clearTimeout(t);
+    }
+}
+
+function fillFromOCR(data){
+    const fullText = (data.fullText || "").trim();
+
+    // Merchant: first meaningful line (fallback)
+    let merchant = "";
+    if(fullText){
+        const lines = fullText.split("\n").map(l=>l.trim()).filter(l=>l.length>2);
+        if(lines.length) merchant = normalizeMerchant(lines[0]);
+    }
+
+    const iso = (data.dateISO || "").trim();
+    const total = (data.total != null && !Number.isNaN(Number(data.total))) ? Number(data.total) : null;
+
+    if(!merchant && !total && !iso) return false;
+
+    const beschreibung=document.querySelector("input[placeholder='Beschreibung']");
+    const betrag=document.querySelector("input[placeholder='Betrag']");
+    const datum=document.querySelector("input[type='date']");
+
+    // Wunsch: Kaufhausname in "Bezeichnung/Beschreibung"
+    if(beschreibung && merchant) beschreibung.value = merchant;
+    if(betrag && total != null) betrag.value = total.toFixed(2);
+    if(datum && iso) datum.value = iso;
+
+    // Success criteria: we at least got a total
+    return total != null;
+}
+
+function extractTotal(text){
+    const lines = text.split("\n").map(l=>l.trim());
+    const keys=["SUMME","GESAMT","ZU ZAHLEN","ZAHLEN","ENDSUMME","GESAMTBETRAG","BETRAG"];
+
+    for(const line of lines){
+        const u=line.toUpperCase();
+        if(keys.some(k=>u.includes(k))){
+            const m=line.match(/\d+[,.]\d{2}/);
+            if(m) return parseFloat(m[0].replace(",", "."));
+        }
+    }
+    return null;
+}
+
+function normalizeMerchant(name){
+    const u=name.toUpperCase();
+    if(u.includes("REWE")) return "REWE";
+    if(u.includes("ALDI")) return "ALDI";
+    if(u.includes("LIDL")) return "LIDL";
+    if(u.includes("NETTO")) return "NETTO";
+    if(u.includes("KAUFLAND")) return "KAUFLAND";
+    if(u.includes("EDEKA")) return "EDEKA";
+    return name;
+}
+
+function parseReceipt(text){
+
+    const lines=text.split("\n").map(l=>l.trim()).filter(l=>l.length>3);
+    if(!lines.length) return false;
+
+    const merchant=normalizeMerchant(lines[0]);
+
+    const dateMatch=text.match(/\d{2}\.\d{2}\.\d{4}/);
+    let iso="";
+    if(dateMatch){
+        const [d,m,y]=dateMatch[0].split(".");
+        iso=`${y}-${m}-${d}`;
+    }
+
+    let total=extractTotal(text);
+    if(!total){
+        const amounts=text.match(/\d+[,.]\d{2}/g)||[];
+        if(amounts.length){
+            total=Math.max(...amounts.map(a=>parseFloat(a.replace(",", "."))));
+        }
+    }
+
+    if(!merchant||!total) return false;
+
+    const beschreibung=document.querySelector("input[placeholder='Beschreibung']");
+    const betrag=document.querySelector("input[placeholder='Betrag']");
+    const datum=document.querySelector("input[type='date']");
+
+    if(beschreibung) beschreibung.value=merchant;
+    if(betrag) betrag.value=total.toFixed(2);
+    if(datum&&iso) datum.value=iso;
+
+    return true;
+}
 </script>
 
 </body>
