@@ -8560,106 +8560,191 @@ migrateData(fromVersion, toVersion) {
 
 
 <script>
-let browserStream = null;
 let scanning = false;
+let _scannerModal = null;
+let _scannerImageDataUrl = null;
+let _lastMerchantGuess = "";
+
+function closeBrowserScanner(){
+    scanning = false;
+    _scannerImageDataUrl = null;
+    if(_scannerModal) _scannerModal.remove();
+    _scannerModal = null;
+}
 
 async function openBrowserScanner(){
+    // Manual capture for sharp results (iOS/Safari friendly): use native camera capture via <input type="file" capture>
+    if(_scannerModal) _scannerModal.remove();
 
     const modal = document.createElement("div");
     modal.className = "notification-modal";
     modal.style.display = "flex";
 
     modal.innerHTML = `
-        <div class="modal-content">
-            <h3>Kassenbon scannen</h3>
-            <video id="scannerVideo" autoplay playsinline style="width:100%;border-radius:12px;"></video>
-            <p id="scannerStatus" style="margin-top:10px;font-size:13px;">Kamera wird gestartet...</p>
-            <button onclick="closeBrowserScanner()" class="btn-primary w-full mt-4">Abbrechen</button>
+        <div class="modal-content" style="max-width:520px;">
+            <h3 style="margin-bottom:10px;">Kassenbon scannen</h3>
+
+            <div id="scanPreviewWrap" style="width:100%;border-radius:14px;overflow:hidden;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);">
+                <div style="padding:14px;font-size:13px;opacity:.9;line-height:1.35;">
+                    Tipp: Halte den Bon flach, fülle das Bild aus und achte auf gutes Licht. <br/>
+                    Für den Betrag: unteren Bereich (Summe/Zu zahlen) gut sichtbar.
+                </div>
+                <img id="scanPreviewImg" alt="Vorschau" style="display:none;width:100%;height:auto;"/>
+            </div>
+
+            <input id="scanFileInput" type="file" accept="image/*" capture="environment" style="display:none;" />
+
+            <p id="scannerStatus" style="margin-top:10px;font-size:13px;opacity:.9;">Bereit. Foto aufnehmen.</p>
+
+            <div style="display:flex;gap:10px;margin-top:12px;">
+                <button id="btnTakePhoto" class="btn-primary w-full" type="button">Foto aufnehmen</button>
+                <button id="btnDoScan" class="btn-secondary w-full" type="button" disabled>Jetzt scannen</button>
+            </div>
+
+            <button onclick="closeBrowserScanner()" class="btn-secondary w-full mt-3" type="button">Abbrechen</button>
+
+            <div style="margin-top:10px;font-size:12px;opacity:.75;">
+                Hinweis: Foto wird nicht gespeichert (nur RAM, danach sofort gelöscht).
+            </div>
         </div>
     `;
 
     document.body.appendChild(modal);
+    _scannerModal = modal;
 
-    const video = document.getElementById("scannerVideo");
-    const status = document.getElementById("scannerStatus");
+    const fileInput = modal.querySelector("#scanFileInput");
+    const previewImg = modal.querySelector("#scanPreviewImg");
+    const status = modal.querySelector("#scannerStatus");
+    const btnTake = modal.querySelector("#btnTakePhoto");
+    const btnScan = modal.querySelector("#btnDoScan");
 
-    try{
-        browserStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: "environment" } }
-        });
+    const resetState = () => {
+        _scannerImageDataUrl = null;
+        previewImg.style.display = "none";
+        previewImg.src = "";
+        btnScan.disabled = true;
+    };
 
-        video.srcObject = browserStream;
-        scanning = true;
-        status.innerText = "Bon wird erkannt...";
-        scanLoop(video, status);
+    resetState();
 
-    }catch(e){
-        status.innerText = "Kamera-Zugriff nicht möglich.";
-    }
-}
+    btnTake.addEventListener("click", () => {
+        // iOS will open native camera; user confirms photo -> fileInput change
+        fileInput.click();
+    });
 
-function closeBrowserScanner(){
-    scanning = false;
-    if(browserStream){
-        browserStream.getTracks().forEach(t => t.stop());
-    }
-    document.querySelector(".notification-modal")?.remove();
-}
-
-async function scanLoop(video, status){
-
-    if(!scanning) return;
-
-    // Wait until we have enough video data
-    if(video.readyState < 2){
-        setTimeout(() => scanLoop(video,status), 800);
-        return;
-    }
-
-    // Avoid parallel requests
-    if(scanLoop._busy){
-        setTimeout(() => scanLoop(video,status), 900);
-        return;
-    }
-
-    // Capture bottom part of the receipt (faster + more relevant)
-    const canvas = document.createElement("canvas");
-    const cropHeight = Math.floor(video.videoHeight * 0.45);
-    const cropY = video.videoHeight - cropHeight;
-
-    canvas.width = video.videoWidth;
-    canvas.height = cropHeight;
-
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(video,0,cropY,video.videoWidth,cropHeight,0,0,video.videoWidth,cropHeight);
-
-    const dataUrl = canvas.toDataURL("image/jpeg",0.82);
-
-    scanLoop._busy = true;
-    try{
-        status.innerText = "Bon wird erkannt...";
-        const data = await visionOCR(dataUrl);
-
-        // data: { fullText, dateISO, total }
-        if(data && (data.total != null || data.dateISO || data.fullText)){
-            const ok = fillFromOCR(data);
-            if(ok){
-                status.innerText = "Erkannt ✓";
-                setTimeout(closeBrowserScanner, 450);
-                return;
-            }
+    fileInput.addEventListener("change", async () => {
+        const f = fileInput.files && fileInput.files[0];
+        if(!f){
+            resetState();
+            status.innerText = "Kein Foto gewählt.";
+            return;
         }
 
-        status.innerText = "Nicht sicher – weiter scannen...";
-    }catch(e){
-        console.error(e);
-        status.innerText = "OCR Fehler. Bitte erneut versuchen";
-    }finally{
-        scanLoop._busy = false;
-    }
+        status.innerText = "Foto wird vorbereitet…";
 
-    setTimeout(() => scanLoop(video,status), 1200);
+        // Load into memory (DataURL). No persistence.
+        const reader = new FileReader();
+        const p = new Promise((resolve, reject) => {
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+        });
+        reader.readAsDataURL(f);
+
+        try{
+            const dataUrl = await p;
+            _scannerImageDataUrl = String(dataUrl || "");
+            previewImg.src = _scannerImageDataUrl;
+            previewImg.style.display = "block";
+            btnScan.disabled = false;
+            status.innerText = "Vorschau ok. Jetzt scannen.";
+        }catch(e){
+            console.error(e);
+            resetState();
+            status.innerText = "Foto konnte nicht gelesen werden. Bitte erneut.";
+        }finally{
+            // ensure input can pick same file again
+            fileInput.value = "";
+        }
+    });
+
+    btnScan.addEventListener("click", async () => {
+        if(!_scannerImageDataUrl){
+            status.innerText = "Bitte zuerst ein Foto aufnehmen.";
+            return;
+        }
+
+        try{
+            btnScan.disabled = true;
+            btnTake.disabled = true;
+            status.innerText = "OCR läuft…";
+
+            // Optional: downscale for speed while keeping readability
+            const optimized = await optimizeForOCR(_scannerImageDataUrl);
+
+            const ocr = await visionOCR(optimized);
+            const ok = fillFromOCR(ocr);
+
+            // Learnable merchant hint
+            if(ok){
+                status.innerText = "Erkannt. Felder wurden ausgefüllt.";
+                // store last guess for learning
+                const text = String(ocr.fullText || "").trim();
+                const m = detectMerchant(text);
+                _lastMerchantGuess = m || "";
+                // Encourage manual correction if needed
+                showToast("Scan übernommen", "success");
+                closeBrowserScanner();
+            }else{
+                status.innerText = "Bon erkannt, aber nicht sicher. Bitte Foto näher / heller.";
+                btnScan.disabled = false;
+                btnTake.disabled = false;
+            }
+        }catch(e){
+            console.error(e);
+            status.innerText = "OCR Fehler. Bitte erneut versuchen";
+            btnScan.disabled = false;
+            btnTake.disabled = false;
+        }finally{
+            // Drop image from memory ASAP
+            _scannerImageDataUrl = null;
+        }
+    });
 }
+
+// Resize/normalize image for OCR (keeps it in RAM only)
+async function optimizeForOCR(dataUrl){
+    try{
+        const img = await new Promise((resolve, reject) => {
+            const i = new Image();
+            i.onload = () => resolve(i);
+            i.onerror = reject;
+            i.src = dataUrl;
+        });
+
+        const maxW = 1600; // good balance speed/quality
+        const scale = Math.min(1, maxW / (img.naturalWidth || img.width || maxW));
+        const w = Math.round((img.naturalWidth || img.width) * scale);
+        const h = Math.round((img.naturalHeight || img.height) * scale);
+
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, w);
+        c.height = Math.max(1, h);
+        const ctx = c.getContext("2d", { alpha:false });
+
+        // neutral background
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0,0,c.width,c.height);
+
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+
+        // mild contrast boost (simple)
+        // (keep lightweight to avoid perf issues)
+        return c.toDataURL("image/jpeg", 0.85);
+    }catch(e){
+        return dataUrl;
+    }
+}
+
 
 // === Google Vision (über Cloud Run Function) ===
 const VISION_ENDPOINT = "https://ocr-receipt-74837873538.europe-west3.run.app";
@@ -8788,7 +8873,9 @@ function _alnumTight(s){
 function _levenshtein(a,b){
     a = String(a||""); b = String(b||"");
     const m=a.length, n=b.length;
-    if(m===0) return n;
+    if(m===0)
+            const _learn = lookupMerchant(n);
+            return _learn || n;
     if(n===0) return m;
     const dp = new Array(n+1);
     for(let j=0;j<=n;j++) dp[j]=j;
@@ -8866,9 +8953,69 @@ function normalizeMerchant(name){
     return line;
 }
 
+
+// === Händler-Lernen (lokal, ohne Cloud) ===
+const MERCHANT_MAP_KEY = "wallit_merchant_map_v1";
+function _loadMerchantMap(){
+    try{ return JSON.parse(localStorage.getItem(MERCHANT_MAP_KEY) || "{}") || {}; }catch(e){ return {}; }
+}
+function _saveMerchantMap(map){
+    try{ localStorage.setItem(MERCHANT_MAP_KEY, JSON.stringify(map || {})); }catch(e){}
+}
+function rememberMerchant(fromGuess, corrected){
+    const g = _fold(String(fromGuess||"").trim());
+    const c = String(corrected||"").trim();
+    if(!g || !c) return false;
+    const map = _loadMerchantMap();
+    map[g] = c;
+    _saveMerchantMap(map);
+    return true;
+}
+function lookupMerchant(guess){
+    const g = _fold(String(guess||"").trim());
+    if(!g) return "";
+    const map = _loadMerchantMap();
+    return map[g] || "";
+}
+
+// Auto-learn when user corrects the Beschreibung field after a scan
+(function attachMerchantLearning(){
+    const tryBind = () => {
+        const beschreibung = document.querySelector("input[placeholder='Beschreibung']");
+        if(!beschreibung || beschreibung._merchantLearningBound) return false;
+        beschreibung._merchantLearningBound = true;
+
+        let lastValue = beschreibung.value || "";
+        beschreibung.addEventListener("focus", () => { lastValue = beschreibung.value || ""; });
+
+        beschreibung.addEventListener("blur", () => {
+            const cur = (beschreibung.value || "").trim();
+            const prev = (lastValue || "").trim();
+
+            // If user changed value and we have a last guess, store mapping
+            if(cur && _lastMerchantGuess && cur !== prev){
+                rememberMerchant(_lastMerchantGuess, cur);
+            }
+        });
+
+        return true;
+    };
+
+    // Try now + retry after UI mounts
+    if(!tryBind()){
+        window.addEventListener("load", () => tryBind());
+        setTimeout(() => tryBind(), 1200);
+        setTimeout(() => tryBind(), 2500);
+    }
+})();
+
 function detectMerchant(fullText){
     const text = String(fullText || "").trim();
     if(!text) return "";
+
+
+    // 0) User-learned mapping (if we already recognize this merchant)
+    // We apply mapping later on returned candidates too.
 
     const lines = text
         .split("\n")
@@ -8928,7 +9075,9 @@ function detectMerchant(fullText){
             // strip suffix and try again
             const stripped = _normLine(l.replace(suffixRe, "").trim());
             const canon2 = normalizeMerchant(stripped);
-            return canon2 || stripped || canon || l;
+            const _m = (canon2 || stripped || canon || l);
+            const _learn = lookupMerchant(_m);
+            return _learn || _m;
         }
     }
 
@@ -8943,16 +9092,22 @@ function detectMerchant(fullText){
         const u=_fold(l);
         if(u==="KUNDE" || u==="KUNDEN" || u==="BELEG") continue;
 
-        return normalizeMerchant(l);
+        const _m = normalizeMerchant(l);
+        const _learn = lookupMerchant(_m);
+        return _learn || _m;
     }
 
     // 3) Fallback: first plausible line anywhere
     for(const l of lines){
         if(isBad(l)) continue;
-        if(/[A-Za-zÄÖÜäöüß]/.test(l)) return normalizeMerchant(l);
+        if(/[A-Za-zÄÖÜäöüß]/.test(l)) const _m = normalizeMerchant(l);
+        const _learn = lookupMerchant(_m);
+        return _learn || _m;
     }
 
-    return normalizeMerchant(lines[0] || "");
+    const _m = normalizeMerchant(lines[0] || "");
+    const _learn = lookupMerchant(_m);
+    return _learn || _m;
 }
 
 
