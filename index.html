@@ -8576,20 +8576,17 @@ migrateData(fromVersion, toVersion) {
     </div>
 
 
-
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 /**
- * PHOTO-ONLY RECEIPT OCR (NO STORAGE) — ROBUST VERSION
- * Fixes common "OCR Fehler" causes by:
- *  - using a persistent worker (createWorker) instead of Tesseract.recognize()
- *  - explicitly setting worker/core/lang paths for Safari/strict environments
- *  - falling back to 'eng' if 'deu' fails to load
- *  - surfacing the real error message to the user
+ * PHOTO-ONLY OCR (NO STORAGE) — FAST + STABLE
+ * - One tap photo capture (single frame)
+ * - Downscale to max width 1280 to reduce memory + speed up
+ * - OCR only TOP (merchant) + BOTTOM (total/date) instead of 3 zones
+ * - Robust worker init with explicit paths and improved error reporting
+ * - No persistence: no file, no upload, no localStorage. Canvas cleared + camera stopped.
  *
- * Notes:
- *  - Camera requires HTTPS or localhost.
- *  - No image is saved; everything stays in memory and is cleared immediately.
+ * NOTE: Needs HTTPS or localhost for camera in Safari/iOS.
  */
 
 let receiptStream = null;
@@ -8597,18 +8594,21 @@ let worker = null;
 let workerLang = null;
 
 const TESS_BASE = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist";
-const TESS_LANG = "https://tessdata.projectnaptha.com/4.0.0"; // stable lang data host
+const TESS_LANG = "https://tessdata.projectnaptha.com/4.0.0";
 
 function normalizeMerchant(name){
   const u = String(name||"").toUpperCase();
-  if(u.includes("REWE")) return "REWE";
-  if(u.includes("ALDI")) return "ALDI";
-  if(u.includes("LIDL")) return "LIDL";
-  if(u.includes("NETTO")) return "NETTO";
-  if(u.includes("KAUFLAND")) return "KAUFLAND";
-  if(u.includes("EDEKA")) return "EDEKA";
-  return name || "";
+  const map = [
+    ["REWE","REWE"], ["ALDI","ALDI"], ["LIDL","LIDL"], ["NETTO","NETTO"],
+    ["KAUFLAND","KAUFLAND"], ["EDEKA","EDEKA"], ["ROSSMANN","ROSSMANN"],
+    ["DM","dm"], ["IKEA","IKEA"], ["PENNY","PENNY"]
+  ];
+  for(const [k,v] of map){
+    if(u.includes(k)) return v;
+  }
+  return (name||"").trim();
 }
+
 function extractDate(text){
   const m = text.match(/\d{2}[.\-\/]\d{2}[.\-\/]\d{4}/);
   if(!m) return "";
@@ -8616,9 +8616,10 @@ function extractDate(text){
   const [d,mo,y] = s.split(".");
   return `${y}-${mo}-${d}`;
 }
+
 function extractTotal(text){
   const lines = text.split("\n").map(l=>l.trim()).filter(Boolean);
-  const keys = ["SUMME","GESAMT","ZU ZAHLEN","ENDSUMME","GESAMTBETRAG","TOTAL","AMOUNT"];
+  const keys = ["SUMME","GESAMT","ZU ZAHLEN","ENDSUMME","GESAMTBETRAG","TOTAL","BETRAG"];
   for(const line of lines){
     const u=line.toUpperCase();
     if(keys.some(k=>u.includes(k))){
@@ -8626,24 +8627,29 @@ function extractTotal(text){
       if(m) return parseFloat(m[0].replace(",", "."));
     }
   }
+  // fallback: biggest amount in bottom zone
   const amounts = text.match(/\d+[,.]\d{2}/g)||[];
   if(!amounts.length) return null;
   return Math.max(...amounts.map(a=>parseFloat(a.replace(",", "."))));
 }
+
 function fillFields({merchant, dateISO, total}){
   const beschreibung = document.querySelector("input[placeholder='Beschreibung']");
   const betrag = document.querySelector("input[placeholder='Betrag']");
   const datum = document.querySelector("input[type='date']");
+
   if(beschreibung && merchant) beschreibung.value = merchant;
   if(betrag && total != null) betrag.value = Number(total).toFixed(2);
   if(datum && dateISO) datum.value = dateISO;
 }
+
 function stopCamera(){
   if(receiptStream){
     receiptStream.getTracks().forEach(t=>t.stop());
     receiptStream = null;
   }
 }
+
 function closeReceiptModal(){
   stopCamera();
   document.getElementById("receiptPhotoModal")?.remove();
@@ -8657,7 +8663,6 @@ async function ensureWorker(statusEl){
   try{
     worker = await Tesseract.createWorker({
       logger: m => {
-        // optional progress feedback
         if(m.status && typeof m.progress === "number"){
           const p = Math.round(m.progress*100);
           if(p > 0 && p < 100) statusEl.textContent = `OCR läuft… ${p}%`;
@@ -8668,12 +8673,11 @@ async function ensureWorker(statusEl){
       langPath: TESS_LANG
     });
   }catch(e){
-    statusEl.textContent = "OCR konnte nicht initialisiert werden (Worker).";
+    statusEl.textContent = "OCR Fehler: Worker konnte nicht geladen werden.";
     console.error(e);
     return false;
   }
 
-  // Try German first, then fallback to English
   try{
     await worker.loadLanguage("deu");
     await worker.initialize("deu");
@@ -8685,26 +8689,51 @@ async function ensureWorker(statusEl){
       await worker.loadLanguage("eng");
       await worker.initialize("eng");
       workerLang = "eng";
-      statusEl.textContent = "Hinweis: Deutsch-Modell nicht ladbar, nutze Fallback (ENG).";
+      statusEl.textContent = "Hinweis: Deutsch-Modell nicht verfügbar, nutze Englisch-Fallback.";
       return true;
     }catch(e2){
       console.error(e2);
-      statusEl.textContent = "OCR Sprache konnte nicht geladen werden.";
+      statusEl.textContent = "OCR Fehler: Sprache konnte nicht geladen werden.";
       return false;
     }
   }
 }
 
-async function ocrDataUrl(dataUrl, statusEl){
-  if(!worker){
-    const ok = await ensureWorker(statusEl);
-    if(!ok) throw new Error("worker_init_failed");
-  }
+async function recognizeDataUrl(dataUrl){
   const { data } = await worker.recognize(dataUrl);
-  return data.text || "";
+  return (data && data.text) ? data.text : "";
+}
+
+function captureDownscaledFrame(video, maxW=1280){
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const scale = Math.min(1, maxW / vw);
+  const cw = Math.floor(vw * scale);
+  const ch = Math.floor(vh * scale);
+
+  const c = document.createElement("canvas");
+  c.width = cw; c.height = ch;
+  const ctx = c.getContext("2d", { willReadFrequently: false });
+  ctx.drawImage(video, 0, 0, cw, ch);
+  return c;
+}
+
+function cropCanvas(srcCanvas, y, h){
+  const c = document.createElement("canvas");
+  c.width = srcCanvas.width;
+  c.height = h;
+  const ctx = c.getContext("2d", { willReadFrequently: false });
+  ctx.drawImage(srcCanvas, 0, y, srcCanvas.width, h, 0, 0, srcCanvas.width, h);
+  return c;
 }
 
 async function openBrowserScanner(){
+  // HTTPS/localhost guard (Safari)
+  const isLocalhost = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  if(location.protocol !== "https:" && !isLocalhost){
+    alert("Kamera benötigt HTTPS oder localhost.");
+    return;
+  }
+
   const modal = document.createElement("div");
   modal.id = "receiptPhotoModal";
   modal.className = "notification-modal";
@@ -8723,7 +8752,7 @@ async function openBrowserScanner(){
         Tipp: Bon flach hinlegen, gutes Licht, Kamera ruhig halten.
       </p>
       <p style="margin-top:6px;font-size:12px;opacity:.65;">
-        Hinweis: Das Foto wird nicht gespeichert. Es wird nur kurz im Arbeitsspeicher verarbeitet.
+        Hinweis: Foto wird nicht gespeichert (nur RAM, danach sofort gelöscht).
       </p>
     </div>
   `;
@@ -8733,12 +8762,6 @@ async function openBrowserScanner(){
   const status = document.getElementById("receiptStatus");
 
   document.getElementById("cancelReceiptPhoto").addEventListener("click", closeReceiptModal);
-
-  // Camera requires HTTPS/localhost
-  if(location.protocol !== "https:" && location.hostname !== "localhost"){
-    status.textContent = "Kamera benötigt HTTPS oder localhost.";
-    return;
-  }
 
   try{
     receiptStream = await navigator.mediaDevices.getUserMedia({
@@ -8755,86 +8778,82 @@ async function openBrowserScanner(){
 
     status.textContent = "Bereit. Tippe auf „Foto aufnehmen“.";
   }catch(e){
-    status.textContent = "Kamera-Zugriff nicht möglich. Bitte Berechtigung erlauben.";
     console.error(e);
+    status.textContent = "OCR Fehler: Kamera-Zugriff nicht möglich (Berechtigung?).";
     return;
   }
 
   document.getElementById("takeReceiptPhoto").addEventListener("click", async () => {
-    if(!video.videoWidth || !video.videoHeight){
-      status.textContent = "Warte auf Kamerabild…";
-      return;
-    }
-
     try{
-      // Capture full frame in memory
-      const full = document.createElement("canvas");
-      full.width = video.videoWidth;
-      full.height = video.videoHeight;
-      const ctx = full.getContext("2d");
-      ctx.drawImage(video, 0, 0);
-
-      // 3 zones
-      const zones = [
-        {name:"top",    y:0,                           h: Math.floor(full.height*0.25)},
-        {name:"middle", y:Math.floor(full.height*0.25), h: Math.floor(full.height*0.35)},
-        {name:"bottom", y:Math.floor(full.height*0.60), h: Math.floor(full.height*0.40)}
-      ];
+      if(!video.videoWidth || !video.videoHeight){
+        status.textContent = "Warte auf Kamerabild…";
+        return;
+      }
 
       status.textContent = "OCR-Engine wird geladen…";
       const ok = await ensureWorker(status);
-      if(!ok){
-        throw new Error("ocr_engine_not_ready");
-      }
+      if(!ok) return;
+
+      status.textContent = "Foto erfasst…";
+
+      // Capture downscaled frame
+      const full = captureDownscaledFrame(video, 1280);
+
+      // Crop zones: top 22% for merchant, bottom 45% for totals
+      const topH = Math.floor(full.height * 0.22);
+      const botH = Math.floor(full.height * 0.45);
+      const botY = full.height - botH;
+
+      const topC = cropCanvas(full, 0, topH);
+      const botC = cropCanvas(full, botY, botH);
+
+      // Convert to dataUrl in memory
+      const topUrl = topC.toDataURL("image/jpeg", 0.85);
+      const botUrl = botC.toDataURL("image/jpeg", 0.85);
+
+      // Clear original canvas early to reduce memory
+      full.width = 1; full.height = 1;
 
       status.textContent = "OCR läuft…";
 
-      const zoneTexts = {};
-      for(const z of zones){
-        const c = document.createElement("canvas");
-        c.width = full.width;
-        c.height = z.h;
-        const cctx = c.getContext("2d");
-        cctx.drawImage(full, 0, z.y, full.width, z.h, 0, 0, full.width, z.h);
-        const dataUrl = c.toDataURL("image/jpeg", 0.85);
+      const topText = await recognizeDataUrl(topUrl);
+      const botText = await recognizeDataUrl(botUrl);
 
-        zoneTexts[z.name] = await ocrDataUrl(dataUrl, status);
+      // Clear crop canvases
+      topC.width = 1; topC.height = 1;
+      botC.width = 1; botC.height = 1;
 
-        // cleanup canvas buffers
-        c.width = 1; c.height = 1;
-      }
-
-      // Extract
-      const topLines = zoneTexts.top.split("\n").map(l=>l.trim()).filter(l=>l.length>2);
-      const merchant = normalizeMerchant(topLines[0] || "");
-      const dateISO = extractDate(zoneTexts.middle + "\n" + zoneTexts.top + "\n" + zoneTexts.bottom);
-      const total = extractTotal(zoneTexts.bottom);
-
-      // cleanup full canvas
-      full.width = 1; full.height = 1;
-
-      // stop camera immediately after capture (privacy)
+      // Stop camera immediately after capture (privacy)
       stopCamera();
+
+      // Extract merchant from top
+      const topLines = topText.split("\n").map(l=>l.trim()).filter(l=>l.length>2);
+      const merchant = normalizeMerchant(topLines[0] || "");
+
+      // Extract date from both
+      const dateISO = extractDate(topText + "\n" + botText);
+
+      // Extract total from bottom
+      const total = extractTotal(botText);
 
       if(merchant || dateISO || total != null){
         fillFields({merchant, dateISO, total});
         status.textContent = `Erkannt ✓ (${workerLang || "?"})`;
         setTimeout(closeReceiptModal, 450);
       }else{
-        status.textContent = "Nichts Verwertbares erkannt. Bitte näher ran / mehr Licht / Bon gerade halten.";
+        status.textContent = "OCR Fehler: Keine Summe/Datum erkannt. Bitte näher ran + mehr Licht.";
       }
 
     }catch(err){
       console.error(err);
-      // surface real error to user
+      // Show actual error in UI
       status.textContent = "OCR Fehler: " + (err?.message || String(err));
-      // still stop camera for privacy
       stopCamera();
     }
   });
 }
 
-// Button is in template with onclick="openBrowserScanner()"
+// Button in template uses onclick="openBrowserScanner()"
 </script>
 
 </body>
