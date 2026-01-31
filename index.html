@@ -804,14 +804,44 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
+            z-index: 999998;
             backdrop-filter: blur(4px);
-            padding: 16px;
+            padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)) 16px;
+            box-sizing: border-box;
             overflow-y: auto;
         }
         
         body.dark-mode .modal-overlay {
             background: rgba(0, 0, 0, 0.85);
+        }
+        
+        /* Notification Modals (Cloud warnings, etc.) - Bulletproof Centering */
+        .notification-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999998;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        
+        .notification-modal > div {
+            margin: auto;
+        }
+        
+        body.dark-mode .notification-modal {
+            background: rgba(0, 0, 0, 0.8);
         }
         
         .modal-content {
@@ -1569,8 +1599,23 @@
             }
         }
         
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
         .animate-slideDown {
             animation: slideDown 0.3s ease-out forwards;
+        }
+        
+        .animate-modalFadeIn {
+            animation: modalFadeIn 0.3s ease-out forwards;
         }
         
         .animate-slideUp {
@@ -1676,7 +1721,10 @@
 
 .toast-container{
     position: fixed;
-    top: 0; left: 0;
+    top: 0; 
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: 100vw;
     height: 100dvh;        /* modern browsers */
     height: 100svh;        /* iOS Safari stable viewport */
@@ -1690,19 +1738,20 @@
         max(16px, env(safe-area-inset-bottom))
         16px;
     pointer-events: none;
-    z-index: 10000;
+    z-index: 999999;
 }
 
 .toast-notification{
     pointer-events: auto;
-    width: min(520px, calc(100vw - 32px));
-    max-width: calc(100vw - 32px);
-    max-height: 100%;
+    width: min(400px, calc(100vw - 48px));
+    max-width: calc(100vw - 48px);
+    max-height: 80%;
     overflow: auto;
-    padding: 16px 20px;
-    border-radius: 16px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    font-size: 15px;
     font-weight: 600;
-    line-height: 1.35;
+    line-height: 1.4;
     text-align: center;
     box-shadow: 0 20px 50px rgba(0,0,0,0.35);
     backdrop-filter: blur(14px);
@@ -3122,9 +3171,9 @@ migrateData(fromVersion, toVersion) {
             
             showInitialLoadPrompt(cloudData) {
                 const notification = document.createElement('div');
-                notification.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+                notification.className = 'notification-modal';
                 notification.innerHTML = `
-                    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-slideDown">
+                    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-modalFadeIn">
                         <div class="text-center mb-4">
                             <div class="text-5xl mb-3">☁️</div>
                             <h3 class="text-2xl font-bold text-gray-800 mb-2">Cloud-Daten gefunden!</h3>
@@ -3150,9 +3199,9 @@ migrateData(fromVersion, toVersion) {
             
             showOutdatedDataWarning(cloudData) {
                 const notification = document.createElement('div');
-                notification.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+                notification.className = 'notification-modal';
                 notification.innerHTML = `
-                    <div class="bg-orange-50 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-slideDown border-4 border-orange-500">
+                    <div class="bg-orange-50 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-modalFadeIn border-4 border-orange-500">
                         <div class="text-center mb-4">
                             <div class="text-5xl mb-3">⚠️</div>
                             <h3 class="text-2xl font-bold text-orange-800 mb-2">Achtung: Veraltete Daten!</h3>
@@ -3183,7 +3232,7 @@ migrateData(fromVersion, toVersion) {
             
             async loadInitialCloudData() {
                 // Schließe Prompt
-                document.querySelectorAll('.fixed.inset-0').forEach(n => n.remove());
+                document.querySelectorAll('.notification-modal, .fixed.inset-0').forEach(n => n.remove());
                 
                 // Lade Cloud-Daten
                 await this.performLoad();
@@ -3194,7 +3243,7 @@ migrateData(fromVersion, toVersion) {
             
             dismissInitialPrompt() {
                 // Schließe Prompt
-                document.querySelectorAll('.fixed.inset-0').forEach(n => n.remove());
+                document.querySelectorAll('.notification-modal, .fixed.inset-0').forEach(n => n.remove());
                 
                 // Speichere lokalen Timestamp
                 this.localLastModified = Date.now();
@@ -3208,7 +3257,7 @@ migrateData(fromVersion, toVersion) {
             
             continueWithLocalData() {
                 // Schließe Warning
-                document.querySelectorAll('.fixed.inset-0').forEach(n => n.remove());
+                document.querySelectorAll('.notification-modal, .fixed.inset-0').forEach(n => n.remove());
                 
                 // Warnung: User will trotzdem mit alten Daten arbeiten
                 this.showModal('⚠️ Warnung', 
