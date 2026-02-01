@@ -3727,28 +3727,55 @@ migrateData(fromVersion, toVersion) {
             }
             
             createDataHash() {
-                // Erstelle einen einfachen Hash aus den wichtigsten Daten
-                const data = {
-                    ausgaben: this.ausgabenAll,
-                    einkommen: this.einkommenAll,
-                    fixkosten: this.fixkosten,
-                    sparkonten: this.sparkonten,
-                    sparraten: this.sparraten
-                };
-                return JSON.stringify(data).length + '_' + Object.keys(this.ausgabenAll || {}).length;
-            }
+    // Performance: KEIN JSON.stringify über große Objekte (blockiert UI bei onSnapshot)
+    // Wir bilden einen "good-enough" Hash aus Längen + einfachen Zählern.
+    const countObj = (o) => o ? Object.keys(o).length : 0;
+    const countArr = (a) => Array.isArray(a) ? a.length : 0;
+
+    const monthsAusgaben = this.ausgabenAll || {};
+    const monthsEinkommen = this.einkommenAll || {};
+
+    let ausgabenItems = 0;
+    for (const k in monthsAusgaben) ausgabenItems += countArr(monthsAusgaben[k]);
+    let einkommenItems = 0;
+    for (const k in monthsEinkommen) einkommenItems += countArr(monthsEinkommen[k]);
+
+    // Fixkosten/Sparkonten/Sparraten sind i.d.R. Arrays
+    const fix = countArr(this.fixkosten);
+    const sk = countArr(this.sparkonten);
+    const sr = countArr(this.sparraten);
+
+    // Shapes/Key-counts als zusätzlicher Stabilizer
+    const ausKeys = countObj(monthsAusgaben);
+    const einKeys = countObj(monthsEinkommen);
+
+    return `v2|fix:${fix}|sk:${sk}|sr:${sr}|ausM:${ausKeys}|einM:${einKeys}|ausI:${ausgabenItems}|einI:${einkommenItems}`;
+}
+
             
             createCloudDataHash(cloudData) {
-                // Erstelle Hash aus Cloud-Daten
-                const data = {
-                    ausgaben: cloudData.ausgabenAll || {},
-                    einkommen: cloudData.einkommenAll || {},
-                    fixkosten: cloudData.fixkosten || [],
-                    sparkonten: cloudData.sparkonten || [],
-                    sparraten: cloudData.sparraten || []
-                };
-                return JSON.stringify(data).length + '_' + Object.keys(cloudData.ausgabenAll || {}).length;
-            }
+    // Performance: analog zu createDataHash – keine riesigen Stringify-Operationen.
+    const countObj = (o) => o ? Object.keys(o).length : 0;
+    const countArr = (a) => Array.isArray(a) ? a.length : 0;
+
+    const monthsAusgaben = (cloudData && cloudData.ausgabenAll) ? cloudData.ausgabenAll : {};
+    const monthsEinkommen = (cloudData && cloudData.einkommenAll) ? cloudData.einkommenAll : {};
+
+    let ausgabenItems = 0;
+    for (const k in monthsAusgaben) ausgabenItems += countArr(monthsAusgaben[k]);
+    let einkommenItems = 0;
+    for (const k in monthsEinkommen) einkommenItems += countArr(monthsEinkommen[k]);
+
+    const fix = countArr(cloudData && cloudData.fixkosten);
+    const sk = countArr(cloudData && cloudData.sparkonten);
+    const sr = countArr(cloudData && cloudData.sparraten);
+
+    const ausKeys = countObj(monthsAusgaben);
+    const einKeys = countObj(monthsEinkommen);
+
+    return `v2|fix:${fix}|sk:${sk}|sr:${sr}|ausM:${ausKeys}|einM:${einKeys}|ausI:${ausgabenItems}|einI:${einkommenItems}`;
+}
+
             
             showInitialLoadPrompt(cloudData) {
                 const notification = document.createElement('div');
@@ -9427,9 +9454,13 @@ async function rsScanNow(){
     const fullText = await rsSendToVision(rsCapturedDataUrl);
 
     if(!fullText) {
-      status.textContent = "Kein Text erkannt. Bitte erneut aufnehmen.";
-      return;
-    }
+  status.textContent = "Kein Text erkannt. Bitte erneut aufnehmen.";
+  // Speicher freigeben (DataURL kann groß sein)
+  rsCapturedDataUrl = null;
+  rsEl("rsPreviewImg").src = "";
+  rsSetState(RS_STATE.ERROR);
+  return;
+}
 
     const m = rsMerchantFromText(fullText);
     rsLastMerchantKey = m.key || null;
@@ -9437,12 +9468,11 @@ async function rsScanNow(){
     const dateISO = rsParseDate(fullText);
     const total = rsParseTotal(fullText);
 
-    // Fill fields in the Variable Ausgaben form
-    const beschreibung = document.querySelector("input[placeholder='Beschreibung']");
-    const betrag = document.querySelector("input[placeholder='Betrag']");
-    const datum = document.querySelector("input[type='date']");
-
-    if(beschreibung && m.merchant) beschreibung.value = m.merchant;
+    // Fill fields in the Variable Ausgaben form (cache lookups)
+const beschreibung = window.__wallitBeschrEl || (window.__wallitBeschrEl = document.querySelector("input[placeholder='Beschreibung']"));
+const betrag = window.__wallitBetragEl || (window.__wallitBetragEl = document.querySelector("input[placeholder='Betrag']"));
+const datum = window.__wallitDatumEl || (window.__wallitDatumEl = document.querySelector("input[type='date']"));
+if(beschreibung && m.merchant) beschreibung.value = m.merchant;
     if(betrag && total != null) betrag.value = Number(total).toFixed(2);
     if(datum && dateISO) datum.value = dateISO;
 
