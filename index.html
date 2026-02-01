@@ -981,13 +981,15 @@
         }
         
         body.dark-mode .modal-content{
-    background: white;
-    border: none;
-}
-        
-        body.dark-mode .modal-content h3{ color:#0f172a !important; }
-        
-        body.dark-mode .modal-content p{ color:#1f2937 !important; }
+            background: rgba(45, 45, 65, 0.95);
+            border: 1px solid rgba(102, 126, 234, 0.35);
+            color: var(--text-primary);
+        }
+
+        body.dark-mode .modal-content h3{ color: var(--text-primary) !important; }
+
+        body.dark-mode .modal-content p{ color: var(--text-secondary) !important; }
+
         
         body.dark-mode .modal-content button.bg-gray-300 {
             background: rgba(70, 70, 90, 0.8) !important;
@@ -1936,6 +1938,214 @@ body.dark-mode .notification-modal .bg-blue-600{
     background-color: rgba(37, 99, 235, 0.85) !important;
 }
 
+
+        /* ===========================
+           Haushalt-Modal (Light + Dark) — subtle + aligned + correct layout
+           =========================== */
+
+        .household-modal{
+            --hm-radius: 18px;
+            --hm-pad: 16px;
+
+            --hm-title: clamp(20px, 2.6vw, 26px);
+            --hm-label: 13px;
+
+            --hm-input-fs: 15px;
+            --hm-input-py: 10px;
+            --hm-input-px: 12px;
+            --hm-input-radius: 12px;
+
+            --hm-btn-fs: 15px;
+            --hm-btn-py: 10px;
+            --hm-btn-px: 12px;
+            --hm-btn-radius: 12px;
+
+            --hm-card-radius: 18px;
+            --hm-card-pad: 14px;
+
+            --hm-emoji: 28px;
+            --hm-name: clamp(20px, 2.4vw, 24px);
+            --hm-id: 13px;
+            --hm-note: 12px;
+
+            border-radius: var(--hm-radius);
+            padding: var(--hm-pad);
+        }
+
+        .household-modal .hm-title{
+            margin: 0 0 12px 0;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            font-size: var(--hm-title);
+            line-height: 1.2;
+        }
+
+        .household-modal .hm-label{
+            display: block;
+            font-weight: 500;
+            font-size: var(--hm-label);
+            margin: 10px 0 6px 0;
+        }
+
+        .household-modal .hm-field{ margin-bottom: 8px; }
+
+        .household-modal .hm-input{
+            border-radius: var(--hm-input-radius) !important;
+            padding: var(--hm-input-py) var(--hm-input-px) !important;
+            font-size: var(--hm-input-fs) !important;
+        }
+
+        /* Layout: mobile stacks in correct order */
+        .household-modal .hm-layout{
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .household-modal .hm-list{
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Cards */
+        .household-modal .hm-card{
+            border-radius: var(--hm-card-radius);
+            padding: var(--hm-card-pad);
+        }
+
+        .household-modal .hm-emoji{
+            font-size: var(--hm-emoji);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .household-modal .hm-name{
+            font-size: var(--hm-name);
+            font-weight: 750;
+            letter-spacing: -0.01em;
+            margin: 4px 0 2px 0;
+        }
+
+        .household-modal .hm-id{
+            font-size: var(--hm-id);
+            opacity: 0.9;
+            margin-bottom: 6px;
+        }
+
+        .household-modal .hm-note{
+            margin-top: 6px;
+            font-size: var(--hm-note);
+            opacity: 0.75;
+        }
+
+        .household-modal .hm-card-actions{
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Buttons: align with existing modal buttons (flat, no gradients) */
+        .household-modal .hm-btn{
+            width: 100%;
+            border: none;
+            border-radius: var(--hm-btn-radius);
+            padding: var(--hm-btn-py) var(--hm-btn-px);
+            font-size: var(--hm-btn-fs);
+            font-weight: 600;
+            box-shadow: none;
+        }
+
+        .household-modal .hm-btn-primary{ background: var(--accent-green, #10b981); color: #fff; }
+        .household-modal .hm-btn-edit{ background: var(--accent-blue, #3b82f6); color: #fff; }
+        .household-modal .hm-btn-danger{ background: var(--accent-red, #ef4444); color: #fff; }
+        .household-modal .hm-btn-secondary{ background: var(--btn-secondary-bg, rgba(148,163,184,0.18)); color: inherit; }
+
+        /* Bottom actions are always below the list now */
+        .household-modal .hm-actions-bottom{
+            margin-top: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Dark mode */
+        body.dark-mode .household-modal{
+            background: var(--modal-bg-dark, rgba(18,21,34,0.98));
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        body.dark-mode .household-modal .hm-label{ color: rgba(180,188,210,0.85); }
+        body.dark-mode .household-modal .hm-card{
+            background: rgba(28,32,49,0.72);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        body.dark-mode .household-modal .hm-id{ color: rgba(160,168,190,0.92); }
+        body.dark-mode .household-modal .hm-input{
+            background: rgba(12,14,22,0.65) !important;
+            border: 1px solid rgba(255,255,255,0.10) !important;
+            color: #fff !important;
+        }
+
+        /* Light mode */
+        body:not(.dark-mode) .household-modal{
+            background: var(--modal-bg-light, #ffffff);
+            border: 1px solid rgba(0,0,0,0.08);
+        }
+        body:not(.dark-mode) .household-modal .hm-label{ color: #6b7280; }
+        body:not(.dark-mode) .household-modal .hm-card{
+            background: rgba(241,245,249,0.9);
+            border: 1px solid rgba(15,23,42,0.08);
+        }
+        body:not(.dark-mode) .household-modal .hm-id{ color: #6b7280; }
+        body:not(.dark-mode) .household-modal .hm-input{
+            background: rgba(243,244,246,0.95) !important;
+            border: 1px solid #d1d5db !important;
+            color: #111827 !important;
+        }
+
+        /* Desktop: true 2-column + actions row */
+        @media (min-width: 900px){
+            .modal-content.household-modal,
+            .modal-content-large.household-modal{
+                width: min(980px, 92vw) !important;
+                max-width: 980px !important;
+            }
+
+            .household-modal{
+                --hm-pad: 18px;
+                --hm-btn-fs: 14px;
+                --hm-input-fs: 14px;
+                --hm-input-py: 9px;
+                --hm-btn-py: 9px;
+                --hm-card-pad: 14px;
+            }
+
+            .household-modal .hm-layout{
+                display: grid;
+                grid-template-columns: 1.05fr 1fr;
+                gap: 20px;
+                align-items: start;
+            }
+
+            .household-modal .hm-actions-bottom{
+                flex-direction: row;
+                justify-content: flex-end;
+                gap: 10px;
+            }
+            .household-modal .hm-actions-bottom .hm-btn{
+                width: auto;
+                min-width: 160px;
+            }
+        }
+
+        @media (min-width: 1200px){
+            .household-modal .hm-list{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+        }
 </style>
 
 <style>
@@ -4591,55 +4801,58 @@ migrateData(fromVersion, toVersion) {
                 modal.className = 'modal-overlay';
                 
                 const benutzerList = Object.values(this.benutzer).map(b => `
-                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-between bg-gray-50 p-3 rounded-lg mb-2 gap-3">
-                        <div class="flex items-center gap-3">
-                            <span style="font-size: 24px;">${b.emoji}</span>
-                            <div>
-                                <div class="font-semibold text-gray-800">${b.name}</div>
-                                <div class="text-xs text-gray-500">ID: ${b.id}</div>
-                            </div>
-                        </div>
-                        <div class="flex flex-wrap gap-2">${b.id !== 'ich' ? `
-                                <button onclick="app.editBenutzer('${b.id}')" class="px-3 py-1 bg-blue-500 text-white rounded-lg text-xs hover:bg-blue-600">
-                                    Bearbeiten
-                                </button>
-                                <button onclick="app.deleteBenutzer('${b.id}')" class="px-3 py-1 bg-red-500 text-white rounded-lg text-xs hover:bg-red-600">
+                    <div class="hm-card">
+                        <div class="hm-emoji">${b.emoji}</div>
+                        <div class="hm-name">${b.name}</div>
+                        <div class="hm-id">ID: ${b.id}</div>
+
+                        <div class="hm-card-actions">
+                            <button onclick="app.editBenutzer('${b.id}')" class="hm-btn hm-btn-edit">
+                                Bearbeiten
+                            </button>
+                            ${b.id !== 'ich' ? `
+                                <button onclick="app.deleteBenutzer('${b.id}')" class="hm-btn hm-btn-danger">
                                     Löschen
                                 </button>
                             ` : `
-                                <button onclick="app.editBenutzer('${b.id}')" class="px-3 py-1 bg-blue-500 text-white rounded-lg text-xs hover:bg-blue-600">
-                                    Bearbeiten
-                                </button>
-                                <span class="text-xs text-gray-400 px-3 py-1">Standard (nicht löschbar)</span>
+                                <div class="hm-note">Standard (nicht löschbar)</div>
                             `}
                         </div>
                     </div>
-                `).join('');
+                `).join('');;
                 
                 modal.innerHTML = `
-                    <div class="modal-content modal-content-large">
-                        <h3 class="flex items-center gap-2 text-2xl font-bold text-gray-800 mb-4">${icons.users} <span>Haushalt verwalten</span></h3>
-                        
-                        <div class="mb-4">
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">Haushalt-Name</label>
-                            <input type="text" id="haushaltsName" value="${this.haushalt.name}" class="modal-input" />
-                        </div>
-                        
-                        <div class="mb-6">
-                            <div class="flex items-center justify-between mb-3">
-                                <label class="block text-sm font-semibold text-gray-700">Personen im Haushalt</label>
-                                <button onclick="app.addBenutzerForm()" class="btn-save px-3 py-1 text-xs">
-                                    + Person hinzufügen
-                                </button>
+                    <div class="modal-content modal-content-large household-modal">
+                        <h3 class="hm-title">Haushalt verwalten</h3>
+
+                        <div class="hm-layout">
+                            <div class="hm-left">
+                                <div class="hm-field">
+                                    <label class="hm-label">Haushalt-Name</label>
+                                    <input type="text" id="haushaltsName" value="${this.haushalt.name}" class="modal-input hm-input" />
+                                </div>
+
+                                <div class="hm-section">
+                                    <label class="hm-label">Personen im Haushalt</label>
+
+                                    <button onclick="app.addBenutzerForm()" class="hm-btn hm-btn-primary hm-btn-full">
+                                        + Person hinzufügen
+                                    </button>
+                                </div>
                             </div>
-                            ${benutzerList}
+
+                            <div class="hm-right">
+                                <div class="hm-list">
+                                    ${benutzerList}
+                                </div>
+                            </div>
                         </div>
-                        
-                        <div class="flex flex-col sm:flex-row gap-3">
-                                <button onclick="app.saveHaushaltSettings()" class="flex-1 px-4 py-3 text-white rounded-lg font-semibold" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+
+                        <div class="hm-actions hm-actions-bottom">
+                            <button onclick="app.saveHaushaltSettings()" class="hm-btn hm-btn-primary hm-btn-full">
                                 Speichern
                             </button>
-                            <button onclick="document.querySelector('.modal-overlay').remove()" class="flex-1 px-4 py-3 bg-gray-300 text-gray-700 rounded-lg font-semibold">
+                            <button onclick="document.querySelector('.modal-overlay').remove()" class="hm-btn hm-btn-secondary hm-btn-full">
                                 Schließen
                             </button>
                         </div>
