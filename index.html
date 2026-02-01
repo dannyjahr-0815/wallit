@@ -10,7 +10,13 @@
     <link rel="apple-touch-icon" href="wallit-icon-512.png">
     <link rel="icon" type="image/png" href="wallit-icon-512.png">
     <title>Wallit</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+
+    <script>
+      // Perf: disable verbose logs by default (set window.DEBUG=true in console if needed)
+      window.DEBUG = false;
+      window.dlog = (...args) => { if (window.DEBUG) console.log(...args); };
+    </script>
+    <script>
 /* ========================================
    Viewport-Centered Toast (emoji-free)
    ======================================== */
@@ -47,10 +53,67 @@
 })();
 
 </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+
+<script>
+/* ========================================
+   Perf: Lazy-load heavy libraries on demand
+   - Chart.js: dashboard/year/investments charts
+   - d3 + d3-sankey: dashboard sankey
+   - xlsx: export only
+   ======================================== */
+(function(){
+  const _scriptPromises = new Map();
+  function loadScriptOnce(src, {crossOrigin=null} = {}) {
+    if (_scriptPromises.has(src)) return _scriptPromises.get(src);
+    const p = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      if (crossOrigin) s.crossOrigin = crossOrigin;
+      s.onload = () => resolve(true);
+      s.onerror = () => reject(new Error('Failed to load ' + src));
+      document.head.appendChild(s);
+    });
+    _scriptPromises.set(src, p);
+    return p;
+  }
+
+  window.ensureXLSX = async () => {
+    if (window.XLSX) return true;
+    return loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+  };
+
+  window.ensureChartJS = async () => {
+    if (window.Chart) return true;
+    return loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js');
+  };
+
+  window.ensureD3Sankey = async () => {
+    if (window.d3 && window.d3.sankey) return true;
+    if (!window.d3) await loadScriptOnce('https://d3js.org/d3.v7.min.js');
+    // d3-sankey expects d3 global
+    if (!window.d3.sankey) await loadScriptOnce('https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js');
+    return true;
+  };
+
+  // Optional: warm up DNS/TLS without blocking
+  try {
+    const pre = (href) => {
+      const l = document.createElement('link');
+      l.rel = 'preconnect';
+      l.href = href;
+      l.crossOrigin = 'anonymous';
+      document.head.appendChild(l);
+    };
+    pre('https://cdnjs.cloudflare.com');
+    pre('https://d3js.org');
+    pre('https://cdn.jsdelivr.net');
+    pre('https://www.gstatic.com');
+  } catch(e){}
+})();
+</script>
+
+<script defer src="https://cdn.tailwindcss.com"></script>
     <script type="module">
         try {
             const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
@@ -73,7 +136,7 @@
             window.firestoreGetDoc = getDoc;
             window.firestoreOnSnapshot = onSnapshot;
             window.firebaseReady = true;
-            console.log('✅ Firebase erfolgreich initialisiert');
+            dlog('✅ Firebase erfolgreich initialisiert');
         } catch (error) {
             console.error('❌ Firebase-Initialisierung fehlgeschlagen:', error);
             window.firebaseReady = false;
@@ -1902,6 +1965,67 @@ body.dark-mode .secondary-btn{
 
 <style>
 /* === Receipt scanner modal button contrast fix === */
+/* === Receipt scanner state pill === */
+#receiptScannerModal .rs-modal-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+#receiptScannerModal .rs-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.2px;
+  user-select:none;
+  white-space:nowrap;
+  border:1px solid rgba(2,6,23,.12);
+  background: rgba(2,6,23,.04);
+  color:#0f172a;
+}
+body.dark-mode #receiptScannerModal .rs-pill{
+  border-color: rgba(255,255,255,.16);
+  background: rgba(255,255,255,.10);
+  color:#fff;
+}
+#receiptScannerModal .rs-pill.rs-pill-camera{
+  border-color: rgba(59,130,246,.28);
+  background: rgba(59,130,246,.12);
+}
+#receiptScannerModal .rs-pill.rs-pill-captured{
+  border-color: rgba(100,116,139,.28);
+  background: rgba(100,116,139,.10);
+}
+#receiptScannerModal .rs-pill.rs-pill-ocr{
+  border-color: rgba(245,158,11,.35);
+  background: rgba(245,158,11,.14);
+}
+#receiptScannerModal .rs-pill.rs-pill-done{
+  border-color: rgba(34,197,94,.32);
+  background: rgba(34,197,94,.12);
+}
+#receiptScannerModal .rs-pill.rs-pill-error{
+  border-color: rgba(239,68,68,.32);
+  background: rgba(239,68,68,.12);
+}
+
+/* Spinner (only shown in OCR state) */
+#receiptScannerModal .rs-spinner{
+  width:14px;
+  height:14px;
+  border-radius:50%;
+  border:2px solid currentColor;
+  border-right-color: transparent;
+  display:inline-block;
+  animation: rsSpin .75s linear infinite;
+  opacity:.95;
+}
+@keyframes rsSpin{ to { transform: rotate(360deg);} }
+
 #receiptScannerModal .btn-primary{
   background: linear-gradient(90deg, rgba(123,97,255,1), rgba(142,110,255,1));
   color: #fff !important;
@@ -2127,7 +2251,7 @@ button[style*="display:none"]{ display:none !important; }
 
         class FinanceManagerCloud {
             constructor() {
-                console.log('🚀 Constructor gestartet...');
+                dlog('🚀 Constructor gestartet...');
                 
                 // 🚀 PERFORMANCE: Cache initialisieren
                 this.cache = {
@@ -2145,17 +2269,17 @@ button[style*="display:none"]{ display:none !important; }
                 this.hasUnsavedChanges = false;
                 
                 // Teste LocalStorage Verfügbarkeit
-                console.log('📦 Teste LocalStorage...');
+                dlog('📦 Teste LocalStorage...');
                 this.testLocalStorage();
                 
                 // User-ID aus URL-Parameter oder LocalStorage oder neu generieren
-                console.log('🔑 Lade User-ID...');
+                dlog('🔑 Lade User-ID...');
                 this.userId = this.getUserIdFromURL() || this.loadData('userId', null) || this.generateUserId();
                 this.saveData('userId', this.userId);
                 this.updateURLWithUserId();
-                console.log('✅ User-ID geladen:', this.userId);
+                dlog('✅ User-ID geladen:', this.userId);
                 
-                console.log('📅 Initialisiere Daten...');
+                dlog('📅 Initialisiere Daten...');
                 const now = new Date();
                 this.currentMonth = this.loadData('currentMonth', `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
                 this.currentYear = parseInt(this.currentMonth.split('-')[0]);
@@ -2266,7 +2390,7 @@ button[style*="display:none"]{ display:none !important; }
                 
                 // 🚀 PERFORMANCE: Debounced render erstellen
                 this.debouncedRender = this.debounce(() => {
-                    console.log('🎨 Rendering...');
+                    dlog('🎨 Rendering...');
                     this.render();
                 }, 150);
                 
@@ -2397,7 +2521,7 @@ migrateData(fromVersion, toVersion) {
         this.saveData('sparraten', this.sparraten);
         this.saveData('kontobewegungen', this.kontobewegungen);
 
-        console.log('✅ Datenmigration abgeschlossen');
+        dlog('✅ Datenmigration abgeschlossen');
     } catch (e) {
         console.error('❌ Datenmigration fehlgeschlagen:', e);
     }
@@ -2466,7 +2590,7 @@ migrateData(fromVersion, toVersion) {
                 }
                 
                 this.isRendering = true;
-                requestAnimationFrame(() => {
+                requestAnimationFrame(async () => {
                     const batch = this.renderQueue.splice(0, 10); // 10 pro Frame
                     batch.forEach(fn => {
                         try {
@@ -2645,18 +2769,18 @@ migrateData(fromVersion, toVersion) {
                 document.addEventListener('click', (e) => {
                     if (e.target.classList.contains('einkommen-save-btn')) {
                         const userId = e.target.getAttribute('data-user-id');
-                        console.log('Einkommen-Button geklickt:', userId);
+                        dlog('Einkommen-Button geklickt:', userId);
                         this.saveUserEinkommen(userId);
                     }
                 });
-                console.log('✅ Event Listeners eingerichtet');
+                dlog('✅ Event Listeners eingerichtet');
             }
 
             getUserIdFromURL() {
                 const params = new URLSearchParams(window.location.search);
                 const userId = params.get('userId');
                 if (userId) {
-                    console.log('✅ User-ID aus URL geladen:', userId);
+                    dlog('✅ User-ID aus URL geladen:', userId);
                 }
                 return userId;
             }
@@ -2665,7 +2789,7 @@ migrateData(fromVersion, toVersion) {
                 const url = new URL(window.location);
                 url.searchParams.set('userId', this.userId);
                 window.history.replaceState({}, '', url);
-                console.log('✅ URL aktualisiert mit User-ID');
+                dlog('✅ URL aktualisiert mit User-ID');
             }
 
             testLocalStorage() {
@@ -2679,7 +2803,7 @@ migrateData(fromVersion, toVersion) {
                         throw new Error('LocalStorage funktioniert nicht korrekt');
                     }
                     
-                    console.log('✅ LocalStorage funktioniert');
+                    dlog('✅ LocalStorage funktioniert');
                     this.localStorageWorks = true;
                 } catch (error) {
                     console.error('❌ LocalStorage blockiert:', error);
@@ -3012,22 +3136,47 @@ migrateData(fromVersion, toVersion) {
                 try {
                     const stored = localStorage.getItem(key);
                     if (stored) {
-                        console.log(`✅ ${key} aus LocalStorage geladen`);
+                        dlog(`✅ ${key} aus LocalStorage geladen`);
                         return JSON.parse(stored);
                     }
                 } catch (error) {
                     console.error(`❌ Fehler beim Laden von ${key}:`, error);
                 }
-                console.log(`⚠️ ${key} nicht gefunden, verwende Standardwert`);
+                dlog(`⚠️ ${key} nicht gefunden, verwende Standardwert`);
                 return defaultValue;
             }
 
             saveData(key, value) {
                 try {
-                    localStorage.setItem(key, JSON.stringify(value));
-                    console.log(`✅ ${key} in LocalStorage gespeichert`);
-                    this.saveToIndexedDB(key, value);
-                    
+                    // PERF: batch persistence (localStorage + IndexedDB) to avoid repeated JSON.stringify on rapid updates
+                    this._persistQueue = this._persistQueue || new Map();
+                    this._persistQueue.set(key, value);
+
+                    if (!this._persistTimer) {
+                        this._persistTimer = setTimeout(() => {
+                            const flush = () => {
+                                try {
+                                    for (const [k, v] of this._persistQueue.entries()) {
+                                        localStorage.setItem(k, JSON.stringify(v));
+                                        this.saveToIndexedDB(k, v);
+                                    }
+                                } catch (e) {
+                                    console.error('❌ Persist-Flush fehlgeschlagen:', e);
+                                } finally {
+                                    this._persistQueue.clear();
+                                    this._persistTimer = null;
+                                }
+                            };
+                            if (window.requestIdleCallback) {
+                                requestIdleCallback(flush, { timeout: 800 });
+                            } else {
+                                setTimeout(flush, 0);
+                            }
+                        }, 120);
+                    }
+
+                    dlog(`✅ ${key} gespeichert (queued)`);
+
                     // 🚀 PERFORMANCE: Cache invalidieren wenn Daten sich ändern
                     if (key === 'ausgabenAll' || key === 'einkommenAll' || key === 'fixkosten' || key === 'zusatzeinkommenAll') {
                         this.invalidateCache();
@@ -3293,7 +3442,7 @@ migrateData(fromVersion, toVersion) {
             
             async checkForCloudUpdates() {
                 if (!window.firebaseReady || !window.firebaseDB) {
-                    console.log('⚠️ Firebase nicht bereit - keine Cloud-Prüfung');
+                    dlog('⚠️ Firebase nicht bereit - keine Cloud-Prüfung');
                     return;
                 }
                 
@@ -3302,7 +3451,7 @@ migrateData(fromVersion, toVersion) {
                     const docSnap = await window.firestoreGetDoc(docRef);
                     
                     if (!docSnap.exists()) {
-                        console.log('ℹ️ Keine Cloud-Daten vorhanden');
+                        dlog('ℹ️ Keine Cloud-Daten vorhanden');
                         return;
                     }
                     
@@ -3333,7 +3482,7 @@ migrateData(fromVersion, toVersion) {
                             this.showOutdatedDataWarning(cloudData);
                         } else {
                             // Daten sind identisch - nur Timestamp aktualisieren
-                            console.log('✅ Daten sind identisch - nur Timestamp aktualisiert');
+                            dlog('✅ Daten sind identisch - nur Timestamp aktualisiert');
                             this.localLastModified = cloudTimestamp;
                             this.saveData('lastModified', cloudTimestamp);
                             this.setupRealtimeSync();
@@ -3341,7 +3490,7 @@ migrateData(fromVersion, toVersion) {
                     } else {
                         // Lokale Daten sind aktuell - aktiviere nur Listener
                         this.setupRealtimeSync();
-                        console.log('✅ Lokale Daten sind aktuell');
+                        dlog('✅ Lokale Daten sind aktuell');
                     }
                     
                 } catch (error) {
@@ -3357,7 +3506,7 @@ migrateData(fromVersion, toVersion) {
                     const cloudHash = this.createCloudDataHash(cloudData);
                     
                     const isDifferent = localHash !== cloudHash;
-                    console.log('🔍 Datenvergleich:', isDifferent ? 'UNTERSCHIEDLICH' : 'IDENTISCH');
+                    dlog('🔍 Datenvergleich:', isDifferent ? 'UNTERSCHIEDLICH' : 'IDENTISCH');
                     
                     return isDifferent;
                 } catch (error) {
@@ -3474,7 +3623,7 @@ migrateData(fromVersion, toVersion) {
                 // Aktiviere Real-time Sync
                 this.setupRealtimeSync();
                 
-                console.log('✅ Mit lokalen Daten gestartet');
+                dlog('✅ Mit lokalen Daten gestartet');
             }
             
             continueWithLocalData() {
@@ -3493,7 +3642,7 @@ migrateData(fromVersion, toVersion) {
             
             setupRealtimeSync() {
                 if (!window.firebaseReady || !window.firebaseDB) {
-                    console.log('⚠️ Firebase nicht bereit - Real-time Sync nicht aktiviert');
+                    dlog('⚠️ Firebase nicht bereit - Real-time Sync nicht aktiviert');
                     return;
                 }
                 
@@ -3514,14 +3663,14 @@ migrateData(fromVersion, toVersion) {
                     // Erste Ladung - nur timestamp speichern
                     if (this.cloudLastModified === null) {
                         this.cloudLastModified = cloudTimestamp;
-                        console.log('📡 Real-time Sync aktiviert');
+                        dlog('📡 Real-time Sync aktiviert');
                         return;
                     }
                     
                     // Änderung erkannt
                     if (cloudTimestamp > this.cloudLastModified) {
                         this.cloudLastModified = cloudTimestamp;
-                        console.log('🔔 Änderung in Cloud erkannt!');
+                        dlog('🔔 Änderung in Cloud erkannt!');
                         this.handleCloudUpdate(data);
                     }
                 }, (error) => {
@@ -3535,7 +3684,7 @@ migrateData(fromVersion, toVersion) {
                 
                 if (!dataChanged) {
                     // Daten sind identisch - nur Timestamp aktualisieren, keine Notification
-                    console.log('✅ Daten unverändert - nur Timestamp aktualisiert');
+                    dlog('✅ Daten unverändert - nur Timestamp aktualisiert');
                     this.localLastModified = cloudData.lastModified;
                     
                     // Flag setzen um markAsChanged zu verhindern
@@ -4808,7 +4957,7 @@ migrateData(fromVersion, toVersion) {
                     this.saveData('fixkosten', this.fixkosten);
                     this.saveData('sparkonten', this.sparkonten);
                     this.saveData('sparraten', this.sparraten);
-                    console.log('✅ Migration zu Multi-User abgeschlossen - alle alten Daten wurden migriert');
+                    dlog('✅ Migration zu Multi-User abgeschlossen - alle alten Daten wurden migriert');
                 }
             }
 
@@ -6037,7 +6186,7 @@ migrateData(fromVersion, toVersion) {
                 // Verwende aktiven User wenn kein userId angegeben
                 const targetUser = userId || this.aktiverBenutzer;
                 
-                console.log('setEinkommen called:', { month, betrag, userId, targetUser });
+                dlog('setEinkommen called:', { month, betrag, userId, targetUser });
                 
                 // Validiere Betrag
                 const betragNum = parseFloat(betrag);
@@ -6069,7 +6218,7 @@ migrateData(fromVersion, toVersion) {
                 
                 // Setze Einkommen für spezifischen User
                 this.einkommenAll[month][targetUser] = betragNum;
-                console.log('Einkommen gesetzt:', this.einkommenAll[month]);
+                dlog('Einkommen gesetzt:', this.einkommenAll[month]);
                 
                 this.saveData('einkommenAll', this.einkommenAll);
                 
@@ -6297,6 +6446,13 @@ migrateData(fromVersion, toVersion) {
             }
 
             exportToExcel() {
+                // Lazy-load XLSX only when exporting
+                if (typeof XLSX === "undefined") {
+                    try { await (window.ensureXLSX?.() || Promise.resolve()); } catch(e) {
+                        this.showNotification("Excel-Export nicht verfügbar (XLSX konnte nicht geladen werden).", "error");
+                        return;
+                    }
+                }
                 const wb = XLSX.utils.book_new();
                 
                 const fixkostenWS = XLSX.utils.json_to_sheet(this.fixkosten);
@@ -6509,6 +6665,12 @@ migrateData(fromVersion, toVersion) {
             }
 
             createYearlyCharts() {
+                // Lazy-load Chart.js when charts are needed
+                if (typeof Chart === "undefined") {
+                    // Fire and forget: createCharts() will call again after lib is ready
+                    (window.ensureChartJS?.() || Promise.resolve()).then(() => this.createYearlyCharts()).catch(()=>{});
+                    return;
+                }
                 const yearlyStats = this.getYearlyStats();
                 this.destroyChartsExcept(['monthly','sparquote','category']);
                 
@@ -6614,6 +6776,10 @@ migrateData(fromVersion, toVersion) {
             }
 
             createInvestmentCharts() {
+                if (typeof Chart === "undefined") {
+                    (window.ensureChartJS?.() || Promise.resolve()).then(() => this.createInvestmentCharts()).catch(()=>{});
+                    return;
+                }
                 this.destroyChartsExcept(['distribution','development']);
                 
                 const distributionCanvas = document.getElementById('investmentDistributionChart');
@@ -7250,9 +7416,12 @@ migrateData(fromVersion, toVersion) {
             }
 
             renderSankey() {
-                setTimeout(() => {
+                setTimeout(async () => {
                     const container = document.getElementById('sankey');
-                    if (!container || typeof d3 === 'undefined') return;
+                    if (!container) return;
+                    if (typeof d3 === 'undefined' || !(d3 && d3.sankey)) {
+                        try { await (window.ensureD3Sankey?.() || Promise.resolve()); } catch(e) { return; }
+                    }
                     
                     container.innerHTML = '';
                     
@@ -8606,7 +8775,7 @@ migrateData(fromVersion, toVersion) {
         setTimeout(() => {
             try {
                 window.app = new FinanceManagerCloud();
-                console.log('✅ Wallit erfolgreich initialisiert');
+                dlog('✅ Wallit erfolgreich initialisiert');
                 
                 // Initialize FAB
                 setTimeout(() => {
@@ -8648,445 +8817,20 @@ migrateData(fromVersion, toVersion) {
     </div>
 
 
-<script>
-let browserStream = null;
-let scanning = false;
 
-async function openBrowserScanner(){
 
-    const modal = document.createElement("div");
-    modal.className = "notification-modal";
-    modal.style.display = "flex";
-
-    modal.innerHTML = `
-        <div class="modal-content">
-            <h3>Kassenbon scannen</h3>
-            <video id="scannerVideo" autoplay playsinline style="width:100%;border-radius:12px;"></video>
-            <p id="scannerStatus" style="margin-top:10px;font-size:13px;">Kamera wird gestartet...</p>
-            <button onclick="closeBrowserScanner()" class="btn-primary w-full mt-4">Abbrechen</button>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    const video = document.getElementById("scannerVideo");
-    const status = document.getElementById("scannerStatus");
-
-    try{
-        browserStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: "environment" } }
-        });
-
-        video.srcObject = browserStream;
-        scanning = true;
-        status.innerText = "Bon wird erkannt...";
-        scanLoop(video, status);
-
-    }catch(e){
-        status.innerText = "Kamera-Zugriff nicht möglich.";
-    }
-}
-
-function closeBrowserScanner(){
-    scanning = false;
-    if(browserStream){
-        browserStream.getTracks().forEach(t => t.stop());
-    }
-    document.querySelector(".notification-modal")?.remove();
-}
-
-async function scanLoop(video, status){
-
-    if(!scanning) return;
-
-    // Wait until we have enough video data
-    if(video.readyState < 2){
-        setTimeout(() => scanLoop(video,status), 800);
-        return;
-    }
-
-    // Avoid parallel requests
-    if(scanLoop._busy){
-        setTimeout(() => scanLoop(video,status), 900);
-        return;
-    }
-
-    // Capture bottom part of the receipt (faster + more relevant)
-    const canvas = document.createElement("canvas");
-    const cropHeight = Math.floor(video.videoHeight * 0.45);
-    const cropY = video.videoHeight - cropHeight;
-
-    canvas.width = video.videoWidth;
-    canvas.height = cropHeight;
-
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(video,0,cropY,video.videoWidth,cropHeight,0,0,video.videoWidth,cropHeight);
-
-    const dataUrl = canvas.toDataURL("image/jpeg",0.82);
-
-    scanLoop._busy = true;
-    try{
-        status.innerText = "Bon wird erkannt...";
-        const data = await visionOCR(dataUrl);
-
-        // data: { fullText, dateISO, total }
-        if(data && (data.total != null || data.dateISO || data.fullText)){
-            const ok = fillFromOCR(data);
-            if(ok){
-                status.innerText = "Erkannt ✓";
-                setTimeout(closeBrowserScanner, 450);
-                return;
-            }
-        }
-
-        status.innerText = "Nicht sicher – weiter scannen...";
-    }catch(e){
-        console.error(e);
-        status.innerText = "OCR Fehler. Bitte erneut versuchen";
-    }finally{
-        scanLoop._busy = false;
-    }
-
-    setTimeout(() => scanLoop(video,status), 1200);
-}
-
-// === Google Vision (über Cloud Run Function) ===
-const VISION_ENDPOINT = "https://ocr-receipt-74837873538.europe-west3.run.app";
-
-async function visionOCR(imageBase64){
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), 20000);
-
-    try{
-        const resp = await fetch(VISION_ENDPOINT, {
-            method: "POST",
-            headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({ imageBase64 }),
-            signal: controller.signal
-        });
-
-        // Helpful debugging if something goes wrong
-        if(!resp.ok){
-            const txt = await resp.text().catch(()=> "");
-            throw new Error(`Vision HTTP ${resp.status}: ${txt.slice(0,200)}`);
-        }
-
-        return await resp.json();
-    } finally {
-        clearTimeout(t);
-    }
-}
-
-function fillFromOCR(data){
-    const fullText = (data.fullText || "").trim();
-
-    // Merchant: best-effort detection
-    let merchant = detectMerchant(fullText);
-
-    const iso = (data.dateISO || "").trim();
-    const total = (data.total != null && !Number.isNaN(Number(data.total))) ? Number(data.total) : null;
-
-    if(!merchant && !total && !iso) return false;
-
-    const beschreibung=document.querySelector("input[placeholder='Beschreibung']");
-    const betrag=document.querySelector("input[placeholder='Betrag']");
-    const datum=document.querySelector("input[type='date']");
-
-    // Wunsch: Kaufhausname in "Bezeichnung/Beschreibung"
-    if(beschreibung && merchant) beschreibung.value = merchant;
-    if(betrag && total != null) betrag.value = total.toFixed(2);
-    if(datum && iso) datum.value = iso;
-
-    // Success criteria: we at least got a total
-    return total != null;
-}
-
-function extractTotal(text){
-    const raw = String(text || "");
-    const lines = raw.split("\n").map(l => l.trim()).filter(Boolean);
-
-    // Priority keywords for "final" totals
-    const priority = [
-        "ZU ZAHLEN","ZUZAHLEN","TOTAL","GESAMT","GESAMTBETRAG","ENDSUMME","SUMME","BRUTTO","BETRAG"
-    ];
-
-    // Helper: extract first currency-like number in a line
-    const pickAmount = (line) => {
-        // match 1.234,56 or 1234,56 or 80,20
-        const m = line.match(/(?:\d{1,3}(?:[.\s]\d{3})*|\d+)[,\.]\d{2}/);
-        if(!m) return null;
-        const v = m[0].replace(/\s/g,"").replace(/\./g, (x, i, s)=> (s.includes(",") ? "" : ".")); // keep dot decimals if no comma
-        return parseFloat(v.replace(",", "."));
-    };
-
-    // Pass 1: keyword lines (priority order)
-    for(const key of priority){
-        for(let i=0;i<lines.length;i++){
-            const u = lines[i].toUpperCase().replace(/\s+/g," ");
-            if(u.includes(key)){
-                const v = pickAmount(lines[i]);
-                if(v!=null && Number.isFinite(v)) return v;
-
-                // Sometimes the amount is on the next line
-                if(i+1<lines.length){
-                    const v2 = pickAmount(lines[i+1]);
-                    if(v2!=null && Number.isFinite(v2)) return v2;
-                }
-            }
-        }
-    }
-
-    // Pass 2: look for "EUR" + amount near bottom (often totals section)
-    const tail = lines.slice(Math.max(0, lines.length - Math.max(12, Math.floor(lines.length*0.25))));
-    for(const line of tail){
-        const u = line.toUpperCase();
-        if(u.includes("EUR") || u.includes("€")){
-            const v = pickAmount(line);
-            if(v!=null && Number.isFinite(v)) return v;
-        }
-    }
-
-    return null;
-}
-
-// --- Merchant detection (high-end) ---
-
-function _normLine(s){
-    return String(s||"")
-        .replace(/\u00A0/g," ")
-        .replace(/[|]/g," ")
-        .replace(/\s+/g," ")
-        .trim();
-}
-
-function _fold(s){
-    // Uppercase + light de-accent for common German chars
-    return _normLine(s)
-        .toUpperCase()
-        .replace(/Ä/g,"AE").replace(/Ö/g,"OE").replace(/Ü/g,"UE")
-        .replace(/ß/g,"SS")
-        .replace(/[^A-Z0-9 ]/g," ")
-        .replace(/\s+/g," ")
-        .trim();
-}
-
-function _alnumTight(s){
-    return _fold(s).replace(/\s+/g,"");
-}
-
-function _levenshtein(a,b){
-    a = String(a||""); b = String(b||"");
-    const m=a.length, n=b.length;
-    if(m===0) return n;
-    if(n===0) return m;
-    const dp = new Array(n+1);
-    for(let j=0;j<=n;j++) dp[j]=j;
-    for(let i=1;i<=m;i++){
-        let prev = dp[0];
-        dp[0]=i;
-        for(let j=1;j<=n;j++){
-            const tmp = dp[j];
-            const cost = a[i-1]===b[j-1] ? 0 : 1;
-            dp[j]=Math.min(dp[j]+1, dp[j-1]+1, prev+cost);
-            prev = tmp;
-        }
-    }
-    return dp[n];
-}
-
-function _similarity(a,b){
-    a=_alnumTight(a); b=_alnumTight(b);
-    if(!a || !b) return 0;
-    const dist = _levenshtein(a,b);
-    return 1 - dist / Math.max(a.length, b.length);
-}
-
-function normalizeMerchant(name){
-    const line = _normLine(name);
-    if(!line) return "";
-
-    // Canonical retailers + aliases (extend anytime)
-    const RETAILERS = [
-        {canon:"Hornbach", aliases:["HORNBACH","HORN BACH","HORNACH","HORNBAH","HORN BAH","BAUMARKT AG HORNBACH"]},
-        {canon:"REWE", aliases:["REWE"]},
-        {canon:"ALDI", aliases:["ALDI","ALDl","ALD1"]},
-        {canon:"LIDL", aliases:["LIDL","LIDl"]},
-        {canon:"EDEKA", aliases:["EDEKA"]},
-        {canon:"Kaufland", aliases:["KAUFLAND"]},
-        {canon:"NETTO", aliases:["NETTO","NETTO MARKEN-DISCOUNT","NETTO MARKENDISCOUNT"]},
-        {canon:"PENNY", aliases:["PENNY"]},
-        {canon:"Rossmann", aliases:["ROSSMANN"]},
-        {canon:"dm", aliases:["DM","D M","DM-DROGERIE","DM DROGERIE"]},
-        {canon:"Müller", aliases:["MÜLLER","MUELLER","MULLER"]},
-        {canon:"IKEA", aliases:["IKEA"]},
-        {canon:"OBI", aliases:["OBI"]},
-        {canon:"BAUHAUS", aliases:["BAUHAUS"]},
-        {canon:"toom", aliases:["TOOM"]},
-        {canon:"H&M", aliases:["H&M","HM","H UND M"]},
-        {canon:"ZARA", aliases:["ZARA"]},
-        {canon:"PRIMARK", aliases:["PRIMARK"]},
-        {canon:"MediaMarkt", aliases:["MEDIA MARKT","MEDIAMARKT"]},
-        {canon:"Saturn", aliases:["SATURN"]},
-        {canon:"Amazon", aliases:["AMAZON"]},
-        {canon:"Apotheke", aliases:["APOTHEKE"]},
-    ];
-
-    const folded = _fold(line);
-
-    // Substring hard matches first
-    for(const r of RETAILERS){
-        for(const a of r.aliases){
-            if(folded.includes(_fold(a))) return r.canon;
-        }
-    }
-
-    // Fuzzy: best similarity across aliases
-    let best = {canon:"", score:0};
-    for(const r of RETAILERS){
-        for(const a of r.aliases){
-            const s = _similarity(folded, a);
-            if(s > best.score){
-                best = {canon:r.canon, score:s};
-            }
-        }
-    }
-    if(best.score >= 0.84) return best.canon;
-
-    return line;
-}
-
-function detectMerchant(fullText){
-    const text = String(fullText || "").trim();
-    if(!text) return "";
-
-    const lines = text
-        .split("\n")
-        .map(_normLine)
-        .filter(l => l.length > 1);
-
-    if(!lines.length) return "";
-
-    const isBad = (l) => {
-        const u = _fold(l);
-
-        // Skip obvious non-merchant lines
-        const badTokens = [
-            "SUMME","GESAMT","ZU ZAHLEN","ZUZAHLEN","TOTAL","ENDSUMME","BRUTTO","NETTO",
-            "MWST","UST","STEUER","KASSE","BON","RECHNUNG","BELEG","KUNDENBELEG","VIELEN DANK",
-            "TEL","TELEFON","WWW","HTTP","HTTPS","EMAIL",
-            "KARTENZAHLUNG","EC","VISA","MASTERCARD","GIROCARD","KARTE","CONTACTLESS",
-            "DATUM","UHR","UHRZEIT","BELEG-NR","BELEGNR","TRACE","TERMINAL","POS","NR","VORGANG"
-        ];
-        if(badTokens.some(t => u.includes(t))) return true;
-
-        // mostly numbers / ids / times
-        const digits = (l.match(/\d/g) || []).length;
-        const letters = (l.match(/[A-Za-zÄÖÜäöüß]/g) || []).length;
-        if(digits >= 7 && letters <= 2) return true;
-
-        // address-like
-        if(/\b\d{5}\b/.test(l)) return true;
-        if(/\b(STR\.|STRASSE|STRASSE|WEG|PLATZ|ALLEE|RING|GASSE|HAUSNR|NR\.)\b/i.test(l)) return true;
-
-        return false;
-    };
-
-    // 0) Fast path: any line matches known retailer (fuzzy/hard)
-    let best = {name:"", score:0};
-    for(const l of lines){
-        if(isBad(l)) continue;
-        const n = normalizeMerchant(l);
-        if(n && n !== l) {
-            // normalizeMerchant matched hard or fuzzy
-            return n;
-        }
-        // keep a fuzzy candidate even if normalize returned same line
-        const candidate = normalizeMerchant(l);
-        // candidate might be same line; we still can compute similarity to "Hornbach" via alias in normalizeMerchant,
-        // but normalizeMerchant only returns canon when threshold hit. So nothing here.
-    }
-
-    // 1) Company suffix heuristic (AG/GMBH/etc.) in the middle of receipt, not in header payment section
-    const suffixRe = /\b(AG|GMBH|MBH|KG|E\.K\.|EK|OHG|GMBH\s*&\s*CO\.?\s*KG)\b/i;
-    for(const l of lines){
-        if(isBad(l)) continue;
-        if(suffixRe.test(l)){
-            const canon = normalizeMerchant(l);
-            if(canon && canon !== l) return canon;
-
-            // strip suffix and try again
-            const stripped = _normLine(l.replace(suffixRe, "").trim());
-            const canon2 = normalizeMerchant(stripped);
-            return canon2 || stripped || canon || l;
-        }
-    }
-
-    // 2) Heuristic scan: ignore top ~30% (often payment/totals), pick first plausible shop line
-    const startIdx = Math.max(0, Math.min(lines.length-1, Math.floor(lines.length * 0.30)));
-    for(let i=startIdx; i<lines.length; i++){
-        const l = lines[i];
-        if(isBad(l)) continue;
-        if(!/[A-Za-zÄÖÜäöüß]/.test(l)) continue;
-
-        // avoid generic single words
-        const u=_fold(l);
-        if(u==="KUNDE" || u==="KUNDEN" || u==="BELEG") continue;
-
-        return normalizeMerchant(l);
-    }
-
-    // 3) Fallback: first plausible line anywhere
-    for(const l of lines){
-        if(isBad(l)) continue;
-        if(/[A-Za-zÄÖÜäöüß]/.test(l)) return normalizeMerchant(l);
-    }
-
-    return normalizeMerchant(lines[0] || "");
-}
-
-
-
-function parseReceipt(text){
-
-    const lines=text.split("\n").map(l=>l.trim()).filter(l=>l.length>3);
-    if(!lines.length) return false;
-
-    const merchant = detectMerchant(text);
-
-    const dateMatch=text.match(/\d{2}\.\d{2}\.\d{4}/);
-    let iso="";
-    if(dateMatch){
-        const [d,m,y]=dateMatch[0].split(".");
-        iso=`${y}-${m}-${d}`;
-    }
-
-    let total=extractTotal(text);
-    if(!total){
-        const amounts=text.match(/\d+[,.]\d{2}/g)||[];
-        if(amounts.length){
-            total=Math.max(...amounts.map(a=>parseFloat(a.replace(",", "."))));
-        }
-    }
-
-    if(!merchant||!total) return false;
-
-    const beschreibung=document.querySelector("input[placeholder='Beschreibung']");
-    const betrag=document.querySelector("input[placeholder='Betrag']");
-    const datum=document.querySelector("input[type='date']");
-
-    if(beschreibung) beschreibung.value=merchant;
-    if(betrag) betrag.value=total.toFixed(2);
-    if(datum&&iso) datum.value=iso;
-
-    return true;
-}
-</script>
-
+<!-- Legacy browser scanner removed: use manual receiptScannerModal (no loop) -->
 
 <!-- RECEIPT SCANNER (manual capture, iOS Safari-safe) -->
 <div id="receiptScannerModal" class="notification-modal" style="display:none;">
   <div class="modal-content" style="max-width:560px;">
-    <h3>Kassenbon scannen</h3>
+    <div class="rs-modal-header">
+      <h3 style="margin:0;">Kassenbon scannen</h3>
+      <div id="rsStatePill" class="rs-pill rs-pill-idle" aria-live="polite">
+        <span id="rsPillLabel">Bereit</span>
+        <span id="rsPillSpinner" class="rs-spinner" style="display:none;" aria-hidden="true"></span>
+      </div>
+    </div>
 
     <div id="rsLiveWrap" style="margin-top:10px;">
       <video id="rsVideo" autoplay playsinline muted
@@ -9126,6 +8870,100 @@ function parseReceipt(text){
 let rsStream = null;
 let rsCapturedDataUrl = null;
 let rsLastMerchantKey = null;
+
+// Receipt Scanner state machine (single entry-point, race-safe)
+const RS_STATE = Object.freeze({
+  IDLE: "idle",
+  CAMERA: "camera",
+  CAPTURED: "captured",
+  OCR: "ocr",
+  DONE: "done",
+  ERROR: "error"
+});
+let rsState = RS_STATE.IDLE;
+let rsOcrInFlight = false;
+
+function rsSetState(next, message){
+  rsState = next;
+
+  const status = rsEl("rsStatus");
+  if(status && message) status.textContent = message;
+
+  // State pill + spinner
+  const pill = rsEl("rsStatePill");
+  const pillLabel = rsEl("rsPillLabel");
+  const pillSpin = rsEl("rsPillSpinner");
+  if(pill){
+    pill.classList.remove("rs-pill-idle","rs-pill-camera","rs-pill-captured","rs-pill-ocr","rs-pill-done","rs-pill-error");
+    pill.classList.add("rs-pill-" + next);
+  }
+  if(pillLabel){
+    const txt = (next === RS_STATE.CAMERA) ? "Kamera"
+              : (next === RS_STATE.CAPTURED) ? "Vorschau"
+              : (next === RS_STATE.OCR) ? "OCR"
+              : (next === RS_STATE.DONE) ? "Fertig"
+              : (next === RS_STATE.ERROR) ? "Fehler"
+              : "Bereit";
+    pillLabel.textContent = txt;
+  }
+  if(pillSpin){
+    pillSpin.style.display = (next === RS_STATE.OCR) ? "" : "none";
+  }
+
+  // Button gating
+  const cap = rsEl("rsCaptureBtn");
+  const reshoot = rsEl("rsReshootBtn");
+  const scan = rsEl("rsScanBtn");
+
+  const inCamera = (next === RS_STATE.CAMERA);
+  const hasCapture = (next === RS_STATE.CAPTURED || next === RS_STATE.ERROR);
+  const isOcr = (next === RS_STATE.OCR);
+
+  if(cap){
+    cap.disabled = !inCamera || rsOcrInFlight;
+    cap.style.display = inCamera ? "" : "none";
+  }
+  if(reshoot){
+    reshoot.disabled = rsOcrInFlight;
+    reshoot.style.display = hasCapture ? "" : "none";
+  }
+  if(scan){
+    scan.disabled = !hasCapture || rsOcrInFlight || isOcr;
+    scan.style.display = hasCapture ? "" : "none";
+  }
+}
+
+async function rsStartCamera(){
+  // Guard: don't start camera during OCR
+  if(rsOcrInFlight) return;
+  rsStopCamera();
+  rsCapturedDataUrl = null;
+  rsEl("rsPreviewImg").src = "";
+  rsShowLive();
+  rsSetState(RS_STATE.CAMERA, "Kamera wird gestartet…");
+
+  try {
+    rsStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" } },
+      audio: false
+    });
+
+    const video = rsEl("rsVideo");
+    video.srcObject = rsStream;
+
+    await new Promise(resolve => {
+      const done = () => { video.removeEventListener("loadedmetadata", done); resolve(); };
+      video.addEventListener("loadedmetadata", done);
+      setTimeout(resolve, 900);
+    });
+
+    rsSetState(RS_STATE.CAMERA, "Kamera bereit. Tippe auf „Foto aufnehmen“.");
+  } catch(e) {
+    console.error(e);
+    rsSetState(RS_STATE.ERROR, "Kamera konnte nicht gestartet werden. Bitte Kamera-Berechtigung erlauben.");
+  }
+}
+
 const VISION_OCR_ENDPOINT = "https://ocr-receipt-74837873538.europe-west3.run.app";
 
 function rsStopCamera(){
@@ -9160,45 +8998,25 @@ function rsShowPreview(dataUrl) {
 }
 
 async function openReceiptScanner(){
-  const modal = rsEl("receiptScannerModal");
-  modal.style.display = "flex";
-
-  const status = rsEl("rsStatus");
-  status.textContent = "Kamera wird gestartet…";
-
-  rsCapturedDataUrl = null;
-  rsLastMerchantKey = null;
+  rsEl("receiptScannerModal").style.display = "flex";
   rsShowLive();
-
-  try {
-    // Requires HTTPS (GitHub Pages is HTTPS)
-    rsStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: "environment" } },
-      audio: false
-    });
-    const video = rsEl("rsVideo");
-    video.srcObject = rsStream;
-
-    await new Promise(resolve => {
-      const done = () => { video.removeEventListener("loadedmetadata", done); resolve(); };
-      video.addEventListener("loadedmetadata", done);
-      setTimeout(resolve, 900);
-    });
-
-    status.textContent = "Kamera bereit. Tippe auf „Foto aufnehmen“.";
-  } catch(e) {
-    console.error(e);
-    status.textContent = "Kamera konnte nicht gestartet werden. Bitte Kamera-Berechtigung erlauben.";
-  }
+  await rsStartCamera();
 }
 
 function closeReceiptScanner(){
   rsStopCamera();
   rsEl("receiptScannerModal").style.display = "none";
   rsCapturedDataUrl = null;
+  rsOcrInFlight = false;
+  rsSetState(RS_STATE.IDLE, "");
 }
 
 function rsCaptureFrame(){
+  if(rsOcrInFlight) return;
+  if(rsState !== RS_STATE.CAMERA){
+    rsSetState(rsState, "Bitte zuerst die Kamera starten.");
+    return;
+  }
   const video = rsEl("rsVideo");
   const status = rsEl("rsStatus");
 
@@ -9231,6 +9049,7 @@ function rsCaptureFrame(){
   rsStopCamera();
 
   rsShowPreview(rsCapturedDataUrl);
+  rsSetState(RS_STATE.CAPTURED, "Vorschau bereit. Wenn alles passt: „Jetzt scannen“." );
 }
 
 function rsNormalizeText(s){
@@ -9376,13 +9195,22 @@ async function rsSendToVision(dataUrl){
 
 async function rsScanNow(){
   const status = rsEl("rsStatus");
+
+  if(rsOcrInFlight) return;
+
+  if(rsState !== RS_STATE.CAPTURED && rsState !== RS_STATE.ERROR){
+    rsSetState(rsState, "Bitte zuerst ein Foto aufnehmen.");
+    return;
+  }
   if(!rsCapturedDataUrl){
-    status.textContent = "Bitte zuerst ein Foto aufnehmen.";
+    rsSetState(rsState, "Bitte zuerst ein Foto aufnehmen.");
     return;
   }
 
+  rsOcrInFlight = true;
+  rsSetState(RS_STATE.OCR, "OCR läuft…");
+
   try {
-    status.textContent = "OCR läuft…";
     const fullText = await rsSendToVision(rsCapturedDataUrl);
 
     if(!fullText) {
@@ -9405,7 +9233,7 @@ async function rsScanNow(){
     if(betrag && total != null) betrag.value = Number(total).toFixed(2);
     if(datum && dateISO) datum.value = dateISO;
 
-    status.textContent = "Erkannt ✓";
+    rsSetState(RS_STATE.DONE, "Erkannt.");
 
     // Clear image from memory ASAP
     rsCapturedDataUrl = null;
@@ -9413,7 +9241,11 @@ async function rsScanNow(){
     setTimeout(closeReceiptScanner, 450);
   } catch(e) {
     console.error(e);
-    status.textContent = "OCR Fehler: " + (e?.message || String(e));
+    rsSetState(RS_STATE.ERROR, "OCR Fehler: " + (e?.message || String(e)));
+  } finally {
+    rsOcrInFlight = false;
+    // refresh button states without overriding message
+    rsSetState(rsState);
   }
 }
 
@@ -9448,28 +9280,11 @@ async function rsScanNow(){
   const close = rsEl("rsCloseBtn");
 
   if(cap) cap.addEventListener("click", rsCaptureFrame);
-  if(reshoot) reshoot.addEventListener("click", () => {
-    // restart camera and go live again
-    rsEl("rsStatus").textContent = "Kamera wird gestartet…";
-    rsCapturedDataUrl = null;
-    rsEl("rsPreviewImg").src = "";
-    // open again (starts camera) but keep modal visible
-    (async () => {
-      try {
-        rsStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
-          audio: false
-        });
-        rsEl("rsVideo").srcObject = rsStream;
-        rsShowLive();
-      } catch(e) {
-        console.error(e);
-        rsEl("rsStatus").textContent = "Kamera konnte nicht gestartet werden.";
-      }
-    })();
-  });
+  if(reshoot) reshoot.addEventListener("click", async () => { await rsStartCamera(); });
   if(scan) scan.addEventListener("click", rsScanNow);
   if(close) close.addEventListener("click", closeReceiptScanner);
+  // init state
+  rsSetState(RS_STATE.IDLE, "");
 })();
 </script>
 
