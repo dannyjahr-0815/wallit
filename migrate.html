@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WallIt - Daten Migration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            color: #856404;
+        }
+
+        .info {
+            background: #d1ecf1;
+            border: 2px solid #0dcaf0;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            color: #055160;
+        }
+
+        .success {
+            background: #d1f2dd;
+            border: 2px solid #28a745;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            color: #0f5132;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+        }
+
+        .log.show {
+            display: block;
+        }
+
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+        }
+
+        .log-success {
+            color: #28a745;
+        }
+
+        .log-error {
+            color: #dc3545;
+        }
+
+        .log-info {
+            color: #0dcaf0;
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .stats {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .stats-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .stats-item:last-child {
+            border-bottom: none;
+        }
+
+        .stats-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Daten Migration</h1>
+        <p style="color: #666; margin-bottom: 20px;">Verschiebe deine bestehenden WallIt-Daten in die neue Household-Struktur</p>
+
+        <!-- Schritt 1: Login -->
+        <div id="step1" class="step active">
+            <div class="warning">
+                <strong>⚠️ Wichtig:</strong> Diese Migration sollte nur EINMAL durchgeführt werden, BEVOR du das neue Login-System aktivierst.
+            </div>
+
+            <div class="info">
+                <strong>📋 Was passiert:</strong>
+                <ol style="margin: 10px 0 0 20px;">
+                    <li>Deine bestehenden Daten werden analysiert</li>
+                    <li>Ein neues Household wird für dich erstellt</li>
+                    <li>Alle Daten werden in die neue Struktur kopiert</li>
+                    <li>Optional: Alte Daten werden gelöscht</li>
+                </ol>
+            </div>
+
+            <label style="display: block; margin: 20px 0 10px 0; font-weight: 600;">
+                Deine E-Mail für den neuen Account:
+            </label>
+            <input type="email" id="migrationEmail" placeholder="deine@email.de" 
+                style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px;">
+
+            <label style="display: block; margin: 20px 0 10px 0; font-weight: 600;">
+                Passwort (min. 6 Zeichen):
+            </label>
+            <input type="password" id="migrationPassword" placeholder="Passwort" 
+                style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px;">
+
+            <button onclick="startMigration()">🚀 Migration starten</button>
+        </div>
+
+        <!-- Schritt 2: Analyse -->
+        <div id="step2" class="step">
+            <div class="info">
+                <strong>🔍 Analysiere deine Daten...</strong>
+            </div>
+
+            <div class="stats" id="stats" style="display: none;">
+                <div class="stats-item">
+                    <span>Ausgaben gefunden:</span>
+                    <span class="stats-value" id="statsExpenses">0</span>
+                </div>
+                <div class="stats-item">
+                    <span>Einnahmen gefunden:</span>
+                    <span class="stats-value" id="statsIncome">0</span>
+                </div>
+                <div class="stats-item">
+                    <span>Sparkonten gefunden:</span>
+                    <span class="stats-value" id="statsSavings">0</span>
+                </div>
+                <div class="stats-item">
+                    <span>Settings gefunden:</span>
+                    <span class="stats-value" id="statsSettings">0</span>
+                </div>
+            </div>
+
+            <div id="migrationLog" class="log"></div>
+        </div>
+
+        <!-- Schritt 3: Fertig -->
+        <div id="step3" class="step">
+            <div class="success">
+                <strong>✅ Migration erfolgreich!</strong>
+                <p style="margin-top: 10px;">Alle deine Daten wurden in die neue Struktur verschoben.</p>
+            </div>
+
+            <div class="info">
+                <strong>📋 Nächste Schritte:</strong>
+                <ol style="margin: 10px 0 0 20px;">
+                    <li>Notiere dir deine Login-Daten</li>
+                    <li>Aktiviere das neue Login-System (siehe QUICK_START.md)</li>
+                    <li>Melde dich mit diesen Daten an</li>
+                    <li>Prüfe ob alle Daten korrekt angezeigt werden</li>
+                </ol>
+            </div>
+
+            <div class="warning" id="oldDataWarning">
+                <strong>⚠️ Alte Daten:</strong>
+                <p style="margin: 10px 0;">Deine alten Daten sind noch vorhanden (als Backup). Wenn alles funktioniert, kannst du sie löschen:</p>
+                <button class="btn-danger" onclick="deleteOldData()">🗑️ Alte Daten löschen</button>
+            </div>
+
+            <button onclick="window.location.href='login.html'">➡️ Zum Login</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getAuth, createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAmTH2L-ATcecbt6r18FZb3Pt8BxTyqK9M",
+            authDomain: "wallit-0815.firebaseapp.com",
+            projectId: "wallit-0815",
+            storageBucket: "wallit-0815.firebasestorage.app",
+            messagingSenderId: "492631939654",
+            appId: "1:492631939654:web:8a36bde26196ebee480847"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.firebaseAuth = auth;
+        window.firebaseDb = db;
+
+        let stats = {
+            expenses: 0,
+            income: 0,
+            savings: 0,
+            settings: 0
+        };
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('migrationLog');
+            logDiv.classList.add('show');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function showStep(step) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById(`step${step}`).classList.add('active');
+        }
+
+        window.startMigration = async function() {
+            const email = document.getElementById('migrationEmail').value;
+            const password = document.getElementById('migrationPassword').value;
+
+            if (!email || !password) {
+                alert('Bitte E-Mail und Passwort eingeben!');
+                return;
+            }
+
+            if (password.length < 6) {
+                alert('Passwort muss mindestens 6 Zeichen lang sein!');
+                return;
+            }
+
+            showStep(2);
+
+            try {
+                // 1. Analysiere bestehende Daten
+                log('Analysiere bestehende Daten...', 'info');
+                await analyzeExistingData();
+
+                // 2. Erstelle User
+                log('Erstelle neuen User-Account...', 'info');
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const userId = userCredential.user.uid;
+                log(`User erstellt: ${userId}`, 'success');
+
+                // 3. Erstelle Household
+                log('Erstelle Household...', 'info');
+                const householdId = `solo_${userId}`;
+                await setDoc(doc(db, `households/${householdId}`), {
+                    name: 'Meine Finanzen (Migriert)',
+                    type: 'solo',
+                    createdAt: new Date(),
+                    createdBy: userId,
+                    members: {
+                        [userId]: true
+                    }
+                });
+                log(`Household erstellt: ${householdId}`, 'success');
+
+                // 4. User-Profil erstellen
+                log('Erstelle User-Profil...', 'info');
+                await setDoc(doc(db, `users/${userId}`), {
+                    email: email,
+                    createdAt: new Date(),
+                    currentHouseholdId: householdId
+                });
+                log('User-Profil erstellt', 'success');
+
+                // 5. Migriere Daten
+                await migrateData(householdId, userId);
+
+                // 6. Fertig!
+                log('✅ Migration abgeschlossen!', 'success');
+                setTimeout(() => showStep(3), 1000);
+
+            } catch (error) {
+                log(`❌ Fehler: ${error.message}`, 'error');
+                alert(`Fehler bei der Migration: ${error.message}`);
+            }
+        };
+
+        async function analyzeExistingData() {
+            // Zähle Expenses
+            const expensesSnapshot = await getDocs(collection(db, 'expenses'));
+            stats.expenses = expensesSnapshot.size;
+
+            // Zähle Income
+            const incomeSnapshot = await getDocs(collection(db, 'income'));
+            stats.income = incomeSnapshot.size;
+
+            // Zähle Savings
+            try {
+                const savingsSnapshot = await getDocs(collection(db, 'savingsAccounts'));
+                stats.savings = savingsSnapshot.size;
+            } catch (e) {
+                stats.savings = 0;
+            }
+
+            // Zähle Settings
+            try {
+                const settingsSnapshot = await getDocs(collection(db, 'settings'));
+                stats.settings = settingsSnapshot.size;
+            } catch (e) {
+                stats.settings = 0;
+            }
+
+            // Zeige Stats
+            document.getElementById('stats').style.display = 'block';
+            document.getElementById('statsExpenses').textContent = stats.expenses;
+            document.getElementById('statsIncome').textContent = stats.income;
+            document.getElementById('statsSavings').textContent = stats.savings;
+            document.getElementById('statsSettings').textContent = stats.settings;
+
+            log(`Gefunden: ${stats.expenses} Ausgaben, ${stats.income} Einnahmen, ${stats.savings} Sparkonten`, 'info');
+        }
+
+        async function migrateData(householdId, userId) {
+            let migrated = 0;
+
+            // Migriere Expenses
+            if (stats.expenses > 0) {
+                log('Migriere Ausgaben...', 'info');
+                const expensesSnapshot = await getDocs(collection(db, 'expenses'));
+                
+                for (const expenseDoc of expensesSnapshot.docs) {
+                    const data = expenseDoc.data();
+                    await setDoc(doc(db, `households/${householdId}/expenses/${expenseDoc.id}`), {
+                        ...data,
+                        migratedAt: new Date(),
+                        createdBy: data.createdBy || userId
+                    });
+                    migrated++;
+                    if (migrated % 10 === 0) {
+                        log(`${migrated} Ausgaben migriert...`, 'info');
+                    }
+                }
+                log(`✅ ${stats.expenses} Ausgaben migriert`, 'success');
+            }
+
+            // Migriere Income
+            if (stats.income > 0) {
+                log('Migriere Einnahmen...', 'info');
+                const incomeSnapshot = await getDocs(collection(db, 'income'));
+                
+                for (const incomeDoc of incomeSnapshot.docs) {
+                    const data = incomeDoc.data();
+                    await setDoc(doc(db, `households/${householdId}/income/${incomeDoc.id}`), {
+                        ...data,
+                        migratedAt: new Date(),
+                        createdBy: data.createdBy || userId
+                    });
+                }
+                log(`✅ ${stats.income} Einnahmen migriert`, 'success');
+            }
+
+            // Migriere Savings Accounts
+            if (stats.savings > 0) {
+                log('Migriere Sparkonten...', 'info');
+                const savingsSnapshot = await getDocs(collection(db, 'savingsAccounts'));
+                
+                for (const savingDoc of savingsSnapshot.docs) {
+                    const data = savingDoc.data();
+                    await setDoc(doc(db, `households/${householdId}/savingsAccounts/${savingDoc.id}`), {
+                        ...data,
+                        migratedAt: new Date()
+                    });
+                }
+                log(`✅ ${stats.savings} Sparkonten migriert`, 'success');
+
+                // Migriere auch Savings Transactions falls vorhanden
+                try {
+                    const transactionsSnapshot = await getDocs(collection(db, 'savingsTransactions'));
+                    if (transactionsSnapshot.size > 0) {
+                        for (const transDoc of transactionsSnapshot.docs) {
+                            const data = transDoc.data();
+                            await setDoc(doc(db, `households/${householdId}/savingsTransactions/${transDoc.id}`), {
+                                ...data,
+                                migratedAt: new Date()
+                            });
+                        }
+                        log(`✅ ${transactionsSnapshot.size} Sparkonto-Transaktionen migriert`, 'success');
+                    }
+                } catch (e) {
+                    // Keine Transactions vorhanden
+                }
+            }
+
+            // Migriere Settings
+            if (stats.settings > 0) {
+                log('Migriere Settings...', 'info');
+                const settingsSnapshot = await getDocs(collection(db, 'settings'));
+                
+                for (const settingDoc of settingsSnapshot.docs) {
+                    const data = settingDoc.data();
+                    await setDoc(doc(db, `households/${householdId}/settings/${settingDoc.id}`), {
+                        ...data,
+                        migratedAt: new Date()
+                    });
+                }
+                log(`✅ ${stats.settings} Settings migriert`, 'success');
+            }
+        }
+
+        window.deleteOldData = async function() {
+            if (!confirm('⚠️ WARNUNG: Diese Aktion kann nicht rückgängig gemacht werden!\n\nBist du sicher, dass alle Daten korrekt migriert wurden und du die alten Daten löschen möchtest?')) {
+                return;
+            }
+
+            if (!confirm('Wirklich löschen? Letzte Chance!')) {
+                return;
+            }
+
+            try {
+                log('Lösche alte Daten...', 'info');
+
+                // Lösche alte Expenses
+                const expensesSnapshot = await getDocs(collection(db, 'expenses'));
+                for (const doc of expensesSnapshot.docs) {
+                    await deleteDoc(doc.ref);
+                }
+
+                // Lösche alte Income
+                const incomeSnapshot = await getDocs(collection(db, 'income'));
+                for (const doc of incomeSnapshot.docs) {
+                    await deleteDoc(doc.ref);
+                }
+
+                // Lösche alte Savings
+                try {
+                    const savingsSnapshot = await getDocs(collection(db, 'savingsAccounts'));
+                    for (const doc of savingsSnapshot.docs) {
+                        await deleteDoc(doc.ref);
+                    }
+                } catch (e) {}
+
+                // Lösche alte Transactions
+                try {
+                    const transSnapshot = await getDocs(collection(db, 'savingsTransactions'));
+                    for (const doc of transSnapshot.docs) {
+                        await deleteDoc(doc.ref);
+                    }
+                } catch (e) {}
+
+                // Lösche alte Settings
+                try {
+                    const settingsSnapshot = await getDocs(collection(db, 'settings'));
+                    for (const doc of settingsSnapshot.docs) {
+                        await deleteDoc(doc.ref);
+                    }
+                } catch (e) {}
+
+                log('✅ Alte Daten gelöscht', 'success');
+                document.getElementById('oldDataWarning').innerHTML = `
+                    <div class="success">
+                        <strong>✅ Alte Daten gelöscht!</strong>
+                        <p style="margin-top: 10px;">Die Migration ist vollständig abgeschlossen.</p>
+                    </div>
+                `;
+
+            } catch (error) {
+                log(`❌ Fehler beim Löschen: ${error.message}`, 'error');
+                alert('Fehler beim Löschen der alten Daten. Bitte in der Firebase Console manuell prüfen.');
+            }
+        };
+
+    </script>
+</body>
+</html>
