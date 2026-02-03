@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: blob:; base-uri 'self'; object-src 'none';  script-src 'self' https: 'unsafe-inline' 'unsafe-eval'; style-src 'self' https: 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self' https: data:; connect-src 'self' https: wss:; upgrade-insecure-requests">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -94,6 +95,19 @@
     // d3-sankey expects d3 global
     if (!window.d3.sankey) await loadScriptOnce('https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js');
     return true;
+  };
+
+
+  window.ensureJSQR = async () => {
+    if (window.jsQR) return true;
+    // Lightweight QR decoder used for in-modal QR scanning (works on iOS Safari).
+    return loadScriptOnce('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js');
+  };
+
+  window.ensureZXing = async () => {
+    if (window.ZXingBrowser) return true;
+    // Barcode decoder (EAN/UPC/Code128, etc.) - UMD build exposes global ZXingBrowser
+    return loadScriptOnce('https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js');
   };
 
   // Optional: warm up DNS/TLS without blocking
@@ -281,9 +295,23 @@
             border-color: rgba(102, 126, 234, 0.4) !important;
         }
         
+        /* Select Dropdown Pfeil im Dark Mode - muss direkt nach der Regel oben kommen */
+        body.dark-mode select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 1rem center !important;
+            background-size: 12px !important;
+        }
+        
         body.dark-mode input::placeholder,
         body.dark-mode select::placeholder {
             color: #909090 !important;
+        }
+        
+        /* Date Input Calendar Icon im Dark Mode weiß */
+        body.dark-mode input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
         }
         
         /* Statistik-Karten im Dark Mode */
@@ -1324,6 +1352,18 @@
             font-size: 16px !important; /* verhindert iOS Auto-Zoom */
             line-height: var(--fm-control-height) !important;
         }
+        
+        /* Select Dropdown Pfeil - gleicher Abstand wie Date Picker Icon */
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 12px;
+            padding-right: 2.5rem !important;
+        }
 
         /* Inputs in Modals (falls separat genutzt) */
         .modal-input {
@@ -2361,7 +2401,11 @@ button[style*="display:none"]{ display:none !important; }
             bell: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>',
             alert: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>',
             palette: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"></circle><circle cx="17.5" cy="10.5" r=".5"></circle><circle cx="8.5" cy="7.5" r=".5"></circle><circle cx="6.5" cy="12.5" r=".5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>',
-            wallet: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg>'
+            wallet: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg>',
+            car: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"></path><circle cx="7" cy="17" r="2"></circle><path d="M9 17h6"></path><circle cx="17" cy="17" r="2"></circle></svg>',
+            building: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg>',
+            book: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>',
+            dollarSign: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>'
         };
 
 
@@ -2506,6 +2550,9 @@ button[style*="display:none"]{ display:none !important; }
                 this.sparkonten = this.loadData('sparkonten', []);
                 this.sparraten = this.loadData('sparraten', []);
                 this.kontobewegungen = this.loadData('kontobewegungen', {});
+                
+                // Kredite/Darlehen
+                this.kredite = this.loadData('kredite', []);
                 
                 // Vorlagen für Ausgaben
                 this.ausgabenVorlagen = this.loadData('ausgabenVorlagen', []);
@@ -2957,6 +3004,14 @@ migrateData(fromVersion, toVersion) {
                 } else {
                     return `${value}${nbsp}${curr.symbol}`;
                 }
+            }
+            
+            formatDate(dateString) {
+                const date = new Date(dateString);
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}.${month}.${year}`;
             }
             
             getCurrentCurrencyIcon() {
@@ -4828,58 +4883,68 @@ migrateData(fromVersion, toVersion) {
                 modal.className = 'modal-overlay';
                 
                 const benutzerList = Object.values(this.benutzer).map(b => `
-                    <div class="hm-card">
-                        <div class="hm-emoji">${b.emoji}</div>
-                        <div class="hm-name">${b.name}</div>
-                        <div class="hm-id">ID: ${b.id}</div>
-
-                        <div class="hm-card-actions">
-                            <button onclick="app.editBenutzer('${b.id}')" class="hm-btn hm-btn-edit">
+                    <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <div class="flex items-start gap-4 mb-3">
+                            <div class="text-5xl">${b.emoji}</div>
+                            <div class="flex-1">
+                                <h4 class="text-xl font-bold text-gray-800">${b.name}</h4>
+                                <p class="text-sm text-gray-500">ID: ${b.id}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button onclick="app.editBenutzer('${b.id}')" class="flex-1 p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold">
                                 Bearbeiten
                             </button>
                             ${b.id !== 'ich' ? `
-                                <button onclick="app.deleteBenutzer('${b.id}')" class="hm-btn hm-btn-danger">
+                                <button onclick="app.deleteBenutzer('${b.id}')" class="flex-1 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-semibold">
                                     Löschen
                                 </button>
                             ` : `
-                                <div class="hm-note">Standard (nicht löschbar)</div>
+                                <button disabled class="flex-1 p-2 bg-gray-400 text-white rounded-lg hover:bg-gray-400 transition-colors font-semibold cursor-not-allowed opacity-75 text-sm">
+                                    Nicht löschbar
+                                </button>
                             `}
                         </div>
                     </div>
-                `).join('');;
+                `).join('');
                 
                 modal.innerHTML = `
-                    <div class="modal-content modal-content-large household-modal">
-                        <h3 class="hm-title">Haushalt verwalten</h3>
+                    <div class="modal-content" style="max-width: 900px;">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-6">Haushalt verwalten</h3>
 
-                        <div class="hm-layout">
-                            <div class="hm-left">
-                                <div class="hm-field">
-                                    <label class="hm-label">Haushalt-Name</label>
-                                    <input type="text" id="haushaltsName" value="${this.haushalt.name}" class="modal-input hm-input" />
+                        <!-- Grid: Mobile 1 Spalte, Desktop 2 Spalten -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Linke Seite: Haushalt-Name & Person hinzufügen -->
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Haushalt-Name</label>
+                                    <input type="text" id="haushaltsName" value="${this.haushalt.name}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
                                 </div>
 
-                                <div class="hm-section">
-                                    <label class="hm-label">Personen im Haushalt</label>
-
-                                    <button onclick="app.addBenutzerForm()" class="hm-btn hm-btn-primary hm-btn-full">
-                                        + Person hinzufügen
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Personen im Haushalt</label>
+                                    <button onclick="app.addBenutzerForm()" class="w-full py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-semibold flex items-center justify-center gap-2">
+                                        ${icons.plus} Person hinzufügen
                                     </button>
                                 </div>
                             </div>
 
-                            <div class="hm-right">
-                                <div class="hm-list">
+                            <!-- Rechte Seite: Benutzer-Liste -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Personen</label>
+                                <div class="space-y-3 max-h-[400px] overflow-y-auto">
                                     ${benutzerList}
                                 </div>
                             </div>
                         </div>
 
-                        <div class="hm-actions hm-actions-bottom">
-                            <button onclick="app.saveHaushaltSettings()" class="hm-btn hm-btn-primary hm-btn-full">
+                        <!-- Bottom Actions -->
+                        <div class="flex gap-3 mt-6 pt-6 border-t border-gray-200">
+                            <button onclick="app.saveHaushaltSettings()" class="flex-1 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-semibold">
                                 Speichern
                             </button>
-                            <button onclick="document.querySelector('.modal-overlay').remove()" class="hm-btn hm-btn-secondary hm-btn-full">
+                            <button onclick="document.querySelector('.modal-overlay').remove()" class="flex-1 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors font-semibold">
                                 Schließen
                             </button>
                         </div>
@@ -5275,6 +5340,234 @@ migrateData(fromVersion, toVersion) {
                 this.ausgabenVorlagen.push({ id, name, betrag: parseAmount(betrag), kategorie });
                 this.saveData('ausgabenVorlagen', this.ausgabenVorlagen);
                 this.render();
+            }
+
+            // 💳 KREDIT-FUNKTIONEN
+            
+            calculateKreditDetails(kredit) {
+                // Berechne Kredit-Details
+                const startDate = new Date(kredit.startdatum);
+                const now = new Date();
+                const monthsPassed = Math.max(0, (now.getFullYear() - startDate.getFullYear()) * 12 + (now.getMonth() - startDate.getMonth()));
+                
+                // Restschuld berechnen
+                const gezahlt = Math.min(monthsPassed * kredit.rate, kredit.betrag);
+                const restschuld = Math.max(0, kredit.betrag - gezahlt);
+                
+                // Enddatum
+                const endDate = new Date(startDate);
+                endDate.setMonth(endDate.getMonth() + kredit.laufzeit);
+                
+                // Gesamtzinsen
+                const gesamtZahlung = kredit.rate * kredit.laufzeit;
+                const gesamtZinsen = gesamtZahlung - kredit.betrag;
+                
+                // Bereits gezahlte Zinsen (vereinfacht)
+                const gezahlteZinsen = monthsPassed > 0 ? (gesamtZinsen * (gezahlt / kredit.betrag)) : 0;
+                
+                // Fortschritt
+                const fortschritt = kredit.betrag > 0 ? ((kredit.betrag - restschuld) / kredit.betrag) * 100 : 0;
+                
+                // Status - Kredit ist abbezahlt wenn:
+                // 1. Das Enddatum erreicht wurde, ODER
+                // 2. Die Restschuld 0 ist UND der Kredit bereits gestartet hat
+                const hasStarted = now >= startDate;
+                const isAbbezahlt = now >= endDate || (restschuld === 0 && hasStarted && monthsPassed > 0);
+                
+                return {
+                    restschuld,
+                    fortschritt,
+                    endDate,
+                    gesamtZinsen,
+                    gezahlteZinsen,
+                    isAbbezahlt,
+                    hasStarted,
+                    monthsPassed,
+                    gezahlt
+                };
+            }
+            
+            getAktiveKredite() {
+                return this.kredite.filter(k => {
+                    const details = this.calculateKreditDetails(k);
+                    return !details.isAbbezahlt;
+                });
+            }
+            
+            getGesamtKreditlast() {
+                const aktive = this.getAktiveKredite();
+                return {
+                    restschuld: aktive.reduce((sum, k) => sum + this.calculateKreditDetails(k).restschuld, 0),
+                    monatlicheRate: aktive.reduce((sum, k) => sum + k.rate, 0),
+                    anzahl: aktive.length
+                };
+            }
+            
+            addKredit(name, betrag, zinssatz, laufzeit, rate, startdatum, kategorie = 'Sonstiges', benutzer = 'ich') {
+                const id = Date.now();
+                this.kredite.push({
+                    id,
+                    name,
+                    betrag: parseFloat(betrag),
+                    zinssatz: parseFloat(zinssatz),
+                    laufzeit: parseInt(laufzeit),
+                    rate: parseFloat(rate),
+                    startdatum,
+                    kategorie,
+                    benutzer
+                });
+                this.saveData('kredite', this.kredite);
+                this.invalidateCache();
+                this.render();
+            }
+            
+            addKreditFromForm() {
+                const name = document.getElementById('kreditName').value.trim();
+                const betrag = document.getElementById('kreditBetrag').value;
+                const zinssatz = document.getElementById('kreditZins').value;
+                const laufzeit = document.getElementById('kreditLaufzeit').value;
+                const rate = document.getElementById('kreditRate').value;
+                const startdatum = document.getElementById('kreditStart').value;
+                const kategorie = document.getElementById('kreditKat').value;
+                const benutzer = document.getElementById('kreditBenutzer').value;
+                
+                if (!name || !betrag || !laufzeit || !rate || !startdatum) {
+                    this.showNotification('Bitte alle Pflichtfelder ausfüllen', 'error');
+                    return;
+                }
+                
+                this.addKredit(name, betrag, zinssatz || 0, laufzeit, rate, startdatum, kategorie, benutzer);
+                
+                // Felder leeren
+                document.getElementById('kreditName').value = '';
+                document.getElementById('kreditBetrag').value = '';
+                document.getElementById('kreditZins').value = '';
+                document.getElementById('kreditLaufzeit').value = '';
+                document.getElementById('kreditRate').value = '';
+                document.getElementById('kreditStart').value = new Date().toISOString().split('T')[0];
+                
+                this.showNotification('Kredit hinzugefügt', 'success');
+            }
+            
+            editKredit(id) {
+                const kredit = this.kredite.find(k => k.id === id);
+                if (!kredit) return;
+                
+                const modal = document.createElement('div');
+                modal.className = 'modal-overlay';
+                
+                const kategorien = ['Auto', 'Immobilie', 'Konsumkredit', 'Bildung', 'Sonstiges'];
+                
+                modal.innerHTML = `
+                    <div class="modal-content" style="max-width:600px;">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">Kredit bearbeiten</h3>
+                        
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Name</label>
+                                <input type="text" id="editKreditName" value="${kredit.name}" class="modal-input">
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Kreditbetrag (€)</label>
+                                    <input type="number" id="editKreditBetrag" value="${kredit.betrag}" step="0.01" class="modal-input">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Zinssatz (%)</label>
+                                    <input type="number" id="editKreditZins" value="${kredit.zinssatz}" step="0.01" class="modal-input">
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Laufzeit (Monate)</label>
+                                    <input type="number" id="editKreditLaufzeit" value="${kredit.laufzeit}" class="modal-input">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Monatliche Rate (€)</label>
+                                    <input type="number" id="editKreditRate" value="${kredit.rate}" step="0.01" class="modal-input">
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Startdatum</label>
+                                    <input type="date" id="editKreditStart" value="${kredit.startdatum}" class="modal-input">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Kategorie</label>
+                                    <select id="editKreditKat" class="modal-input">
+                                        ${kategorien.map(k => `<option value="${k}" ${k === kredit.kategorie ? 'selected' : ''}>${k}</option>`).join('')}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Benutzer</label>
+                                <select id="editKreditBenutzer" class="modal-input">
+                                    <option value="gemeinsam" ${kredit.benutzer === 'gemeinsam' ? 'selected' : ''}>Gemeinsam</option>
+                                    ${Object.values(this.benutzer).map(u => `
+                                        <option value="${u.id}" ${u.id === kredit.benutzer ? 'selected' : ''}>${u.emoji} ${u.name}</option>
+                                    `).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-3 mt-6">
+                            <button onclick="app.saveKreditEdit(${id})" class="flex-1 btn-primary">Speichern</button>
+                            <button onclick="document.querySelector('.modal-overlay').remove()" class="flex-1 btn-secondary">Abbrechen</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+            }
+            
+            saveKreditEdit(id) {
+                const kredit = this.kredite.find(k => k.id === id);
+                if (!kredit) return;
+                
+                kredit.name = document.getElementById('editKreditName').value;
+                kredit.betrag = parseFloat(document.getElementById('editKreditBetrag').value);
+                kredit.zinssatz = parseFloat(document.getElementById('editKreditZins').value);
+                kredit.laufzeit = parseInt(document.getElementById('editKreditLaufzeit').value);
+                kredit.rate = parseFloat(document.getElementById('editKreditRate').value);
+                kredit.startdatum = document.getElementById('editKreditStart').value;
+                kredit.kategorie = document.getElementById('editKreditKat').value;
+                kredit.benutzer = document.getElementById('editKreditBenutzer').value;
+                
+                this.saveData('kredite', this.kredite);
+                this.invalidateCache();
+                document.querySelector('.modal-overlay').remove();
+                this.render();
+                this.showNotification('Kredit aktualisiert', 'success');
+            }
+            
+            deleteKredit(id) {
+                const kredit = this.kredite.find(k => k.id === id);
+                if (!kredit) return;
+                
+                const details = this.calculateKreditDetails(kredit);
+                
+                this.showModal(
+                    '⚠️ Kredit löschen?',
+                    `Möchtest du diesen Kredit wirklich löschen?\n\n${kredit.name}\nRestschuld: ${this.formatCurrency(details.restschuld)}\nMonatliche Rate: ${this.formatCurrency(kredit.rate)}`,
+                    [
+                        { text: 'Abbrechen', class: 'bg-gray-300 text-gray-700' },
+                        {
+                            text: 'Löschen',
+                            class: 'bg-red-500 text-white',
+                            callback: () => {
+                                this.kredite = this.kredite.filter(k => k.id !== id);
+                                this.saveData('kredite', this.kredite);
+                                this.invalidateCache();
+                                this.render();
+                                this.showNotification('Kredit gelöscht', 'success');
+                            }
+                        }
+                    ]
+                );
             }
 
             editVorlage(id) {
@@ -5916,15 +6209,34 @@ migrateData(fromVersion, toVersion) {
             }
 
             deleteSparkonto(id) {
-                if (confirm('Sparkonto wirklich löschen? Alle Bewegungen gehen verloren!')) {
-                    this.sparkonten = this.sparkonten.filter(k => k.id !== id);
-                    delete this.kontobewegungen[id];
-                    this.sparraten = this.sparraten.filter(r => r.kontoId !== id);
-                    this.saveData('sparkonten', this.sparkonten);
-                    this.saveData('kontobewegungen', this.kontobewegungen);
-                    this.saveData('sparraten', this.sparraten);
-                    this.render();
-                }
+                const konto = this.sparkonten.find(k => k.id === id);
+                if (!konto) return;
+                
+                const bewegungenCount = (this.kontobewegungen[id] || []).length;
+                const sparratenCount = this.sparraten.filter(r => r.kontoId === id).length;
+                
+                this.showModal(
+                    '⚠️ Sparkonto löschen?',
+                    `Möchtest du dieses Sparkonto wirklich löschen?\n\n${konto.name} (${konto.typ})\nAktueller Stand: ${this.formatCurrency(konto.aktuellerStand)}\n\n⚠️ Es werden auch gelöscht:\n• ${bewegungenCount} Bewegung(en)\n• ${sparratenCount} Sparrate(n)`,
+                    [
+                        { text: 'Abbrechen', class: 'bg-gray-300 text-gray-700' },
+                        {
+                            text: 'Löschen',
+                            class: 'bg-red-500 text-white',
+                            callback: () => {
+                                this.sparkonten = this.sparkonten.filter(k => k.id !== id);
+                                delete this.kontobewegungen[id];
+                                this.sparraten = this.sparraten.filter(r => r.kontoId !== id);
+                                this.saveData('sparkonten', this.sparkonten);
+                                this.saveData('kontobewegungen', this.kontobewegungen);
+                                this.saveData('sparraten', this.sparraten);
+                                this.invalidateCache();
+                                this.render();
+                                this.showNotification('Sparkonto gelöscht', 'success');
+                            }
+                        }
+                    ]
+                );
             }
 
             addSparrate(kontoId, betrag, intervall = 'monatlich', startDatum = null, benutzer = null) {
@@ -6020,9 +6332,33 @@ migrateData(fromVersion, toVersion) {
             }
 
             deleteSparrate(id) {
-                this.sparraten = this.sparraten.filter(r => r.id !== id);
-                this.saveData('sparraten', this.sparraten);
-                this.render();
+                const rate = this.sparraten.find(r => r.id === id);
+                if (!rate) return;
+                
+                const konto = this.sparkonten.find(k => k.id === rate.kontoId);
+                const kontoName = konto ? konto.name : 'Unbekanntes Konto';
+                const benutzerInfo = rate.benutzer && this.benutzer[rate.benutzer] 
+                    ? `${this.benutzer[rate.benutzer].emoji} ${this.benutzer[rate.benutzer].name}` 
+                    : '';
+                
+                this.showModal(
+                    '⚠️ Sparrate löschen?',
+                    `Möchtest du diese Sparrate wirklich löschen?\n\n${this.formatCurrency(rate.betrag)} ${rate.intervall}\nKonto: ${kontoName}${benutzerInfo ? '\nBenutzer: ' + benutzerInfo : ''}`,
+                    [
+                        { text: 'Abbrechen', class: 'bg-gray-300 text-gray-700' },
+                        {
+                            text: 'Löschen',
+                            class: 'bg-red-500 text-white',
+                            callback: () => {
+                                this.sparraten = this.sparraten.filter(r => r.id !== id);
+                                this.saveData('sparraten', this.sparraten);
+                                this.invalidateCache();
+                                this.render();
+                                this.showNotification('Sparrate gelöscht', 'success');
+                            }
+                        }
+                    ]
+                );
             }
 
             addKontobewegung(kontoId, datum, betrag, typ, beschreibung = '') {
@@ -6045,12 +6381,34 @@ migrateData(fromVersion, toVersion) {
             }
 
             deleteKontobewegung(kontoId, bewegungId) {
-                if (this.kontobewegungen[kontoId]) {
-                    this.kontobewegungen[kontoId] = this.kontobewegungen[kontoId].filter(b => b.id !== bewegungId);
-                    this.updateKontostand(kontoId);
-                    this.saveData('kontobewegungen', this.kontobewegungen);
-                    this.render();
-                }
+                if (!this.kontobewegungen[kontoId]) return;
+                
+                const bewegung = this.kontobewegungen[kontoId].find(b => b.id === bewegungId);
+                if (!bewegung) return;
+                
+                const konto = this.sparkonten.find(k => k.id === kontoId);
+                const kontoName = konto ? konto.name : 'Unbekanntes Konto';
+                const typText = bewegung.typ === 'einzahlung' ? '↑ Einzahlung' : '↓ Auszahlung';
+                
+                this.showModal(
+                    '⚠️ Bewegung löschen?',
+                    `Möchtest du diese Bewegung wirklich löschen?\n\n${typText}: ${this.formatCurrency(bewegung.betrag)}\nKonto: ${kontoName}\nDatum: ${this.formatDate(bewegung.datum)}${bewegung.beschreibung ? '\nBeschreibung: ' + bewegung.beschreibung : ''}`,
+                    [
+                        { text: 'Abbrechen', class: 'bg-gray-300 text-gray-700' },
+                        {
+                            text: 'Löschen',
+                            class: 'bg-red-500 text-white',
+                            callback: () => {
+                                this.kontobewegungen[kontoId] = this.kontobewegungen[kontoId].filter(b => b.id !== bewegungId);
+                                this.updateKontostand(kontoId);
+                                this.saveData('kontobewegungen', this.kontobewegungen);
+                                this.invalidateCache();
+                                this.render();
+                                this.showNotification('Bewegung gelöscht', 'success');
+                            }
+                        }
+                    ]
+                );
             }
 
             updateKontostand(kontoId) {
@@ -7359,7 +7717,7 @@ migrateData(fromVersion, toVersion) {
                 
                 return `
                     <div class="bg-white rounded-2xl shadow-xl p-6 border-l-4 mb-6" 
-                         style="border-left-color: ${activeUser.farbe}">
+                         style="border-left-color: ${activeUser.farbe} !important;">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="text-xl font-bold text-gray-800">
                                 ${activeUser.emoji} ${activeUser.name} - ${this.currentMonth}
@@ -7431,15 +7789,22 @@ migrateData(fromVersion, toVersion) {
 
             renderDashboard() {
                 const dash = this.getDashboardStats();
-                const now = new Date();
-                const monthName = now.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+                const [year, month] = this.currentMonth.split('-').map(Number);
+                const monthName = new Date(this.currentMonth + '-01').toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
                 
                 return `
                     <div class="space-y-6">
-                        <!-- Header -->
-                        <div class="text-center mb-6">
-                            <h2 class="flex items-center gap-2 text-3xl font-bold text-gray-800">${icons.barChart} <span>Finanz-Dashboard</span></h2>
-                            <p class="text-gray-500">${monthName}</p>
+                        <!-- Monats-Navigation -->
+                        <div class="flex items-center justify-center gap-4 bg-white p-4 rounded-xl shadow-md border border-gray-200">
+                            <button onclick="app.changeMonth(-1)" class="p-3 hover:bg-gray-100 rounded-lg transition-colors text-gray-700">
+                                ${icons.chevronLeft}
+                            </button>
+                            <div class="text-2xl font-bold text-gray-800 min-w-[200px] sm:min-w-[280px] text-center">
+                                ${monthName}
+                            </div>
+                            <button onclick="app.changeMonth(1)" class="p-3 hover:bg-gray-100 rounded-lg transition-colors text-gray-700">
+                                ${icons.chevronRight}
+                            </button>
                         </div>
 
                         ${this.renderUserStats()}
@@ -7483,7 +7848,7 @@ migrateData(fromVersion, toVersion) {
 
                         <!-- Prognose Details -->
                         <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                            <h3 class="flex items-center gap-2 text-2xl font-bold text-gray-800 mb-4">${icons.zap} <span>Jahresprognose ${now.getFullYear()}</span></h3>
+                            <h3 class="flex items-center gap-2 text-2xl font-bold text-gray-800 mb-4">${icons.zap} <span>Jahresprognose ${year}</span></h3>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div>
                                     <div class="text-sm text-gray-600 mb-1">Bisher gespart</div>
@@ -7500,7 +7865,7 @@ migrateData(fromVersion, toVersion) {
                             </div>
                             <div class="mt-6 p-4 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-lg border border-cyan-200">
                                 <div class="text-center">
-                                    <div class="text-sm text-gray-600 mb-2">Wenn du so weitermachst, hast du Ende ${now.getFullYear()}</div>
+                                    <div class="text-sm text-gray-600 mb-2">Wenn du so weitermachst, hast du Ende ${year}</div>
                                     <div class="text-4xl font-bold text-cyan-700">${this.formatCurrency(dash.prognosis.projectedTotal)}</div>
                                     <div class="text-sm text-gray-500 mt-1">auf deinen Konten gespart!</div>
                                 </div>
@@ -7542,7 +7907,7 @@ migrateData(fromVersion, toVersion) {
 
                         <!-- Jahresübersicht kompakt -->
                         <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                            <h3 class="flex items-center gap-2 text-2xl font-bold text-gray-800 mb-4">${icons.calendar} <span>Jahr ${now.getFullYear()} auf einen Blick</span></h3>
+                            <h3 class="flex items-center gap-2 text-2xl font-bold text-gray-800 mb-4">${icons.calendar} <span>Jahr ${year} auf einen Blick</span></h3>
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
                                     <div class="text-sm text-gray-600 mb-2">Einkommen</div>
@@ -7562,6 +7927,152 @@ migrateData(fromVersion, toVersion) {
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Fixkosten Übersicht -->
+                        <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="flex items-center gap-2 text-2xl font-bold text-gray-800">${icons.home} <span>Fixkosten</span></h2>
+                                <button onclick="app.setTab('stammdaten')" class="text-sm px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors font-semibold">
+                    Verwalten →
+                                </button>
+                            </div>
+                            
+                            ${this.fixkosten.length === 0 ? `
+                                <div class="text-center py-8 text-gray-500">
+                                    <p>Noch keine Fixkosten erfasst</p>
+                                    <button onclick="app.setTab('stammdaten')" class="mt-3 text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
+                                        Jetzt in Stammdaten anlegen →
+                                    </button>
+                                </div>
+                            ` : `
+                                <div class="space-y-3">
+                                    ${this.fixkosten.map(f => `
+                                        <!-- Mobile: Card Layout / Desktop: Horizontal -->
+                                        <div class="bg-gray-50 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                                            <!-- Desktop Layout (>= 768px) -->
+                                            <div class="hidden md:flex items-center justify-between p-3">
+                                                <div class="flex-1 flex items-center gap-3">
+                                                    <div>
+                                                        <span class="font-semibold text-gray-700">${f.name}</span>
+                                                        <span class="text-xs text-gray-500 ml-2">(${f.kategorie})</span>
+                                                    </div>
+                                                    ${f.benutzer ? `
+                                                        <span class="text-xs px-2 py-1 rounded inline-flex items-center gap-1" 
+                                                              style="background: ${f.benutzer === 'gemeinsam' ? '#f59e0b20' : (this.benutzer[f.benutzer]?.farbe + '20' || '#gray')}; 
+                                                                     color: ${f.benutzer === 'gemeinsam' ? '#f59e0b' : (this.benutzer[f.benutzer]?.farbe || '#666')}; 
+                                                                     border: 1px solid ${f.benutzer === 'gemeinsam' ? '#f59e0b40' : (this.benutzer[f.benutzer]?.farbe + '40' || '#gray')};">
+                                                            ${f.benutzer === 'gemeinsam' ? icons.users + '<span>Gemeinsam</span>' : (this.benutzer[f.benutzer] ? this.benutzer[f.benutzer].emoji + ' ' + this.benutzer[f.benutzer].name : f.benutzer)}
+                                                        </span>
+                                                    ` : ''}
+                                                    <span class="text-xs px-2 py-1 rounded border ${(f.intervall || 'monatlich') === 'monatlich' ? 'bg-gray-100 text-gray-700 border-gray-300' : 'bg-purple-50 text-purple-700 border-purple-200'}">
+                                                        ${f.intervall || 'monatlich'}
+                                                    </span>
+                                                </div>
+                                                <div class="flex items-center gap-3">
+                                                    <span class="font-bold text-gray-800">${this.formatCurrency(f.betrag)}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Mobile Layout (< 768px) -->
+                                            <div class="md:hidden p-4">
+                                                <!-- Header: Name + Betrag -->
+                                                <div class="flex items-start justify-between mb-2">
+                                                    <div class="flex-1">
+                                                        <div class="font-semibold text-gray-800 text-lg">${f.name}</div>
+                                                        <div class="text-xs text-gray-500 mt-1">${f.kategorie}</div>
+                                                    </div>
+                                                    <div class="text-xl font-bold text-gray-800 ml-3">
+                                                        ${this.formatCurrency(f.betrag)}
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Badges: User + Intervall -->
+                                                <div class="flex flex-wrap gap-2">
+                                                    ${f.benutzer ? `
+                                                        <span class="text-xs px-2 py-1 rounded inline-flex items-center gap-1" 
+                                                              style="background: ${f.benutzer === 'gemeinsam' ? '#f59e0b20' : (this.benutzer[f.benutzer]?.farbe + '20' || '#gray')}; 
+                                                                     color: ${f.benutzer === 'gemeinsam' ? '#f59e0b' : (this.benutzer[f.benutzer]?.farbe || '#666')}; 
+                                                                     border: 1px solid ${f.benutzer === 'gemeinsam' ? '#f59e0b40' : (this.benutzer[f.benutzer]?.farbe + '40' || '#gray')};">
+                                                            ${f.benutzer === 'gemeinsam' ? icons.users + '<span>Gemeinsam</span>' : (this.benutzer[f.benutzer] ? this.benutzer[f.benutzer].emoji + ' ' + this.benutzer[f.benutzer].name : f.benutzer)}
+                                                        </span>
+                                                    ` : ''}
+                                                    <span class="text-xs px-2 py-1 rounded border ${(f.intervall || 'monatlich') === 'monatlich' ? 'bg-gray-100 text-gray-700 border-gray-300' : 'bg-purple-50 text-purple-700 border-purple-200'}">
+                                                        ${f.intervall || 'monatlich'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `}
+                        </div>
+
+                        <!-- Kredite Übersicht -->
+                        ${this.kredite.length > 0 ? `
+                            <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+                                <h2 class="flex items-center gap-2 text-2xl font-bold text-gray-800 mb-4">${icons.creditCard} <span>Aktive Kredite</span></h2>
+                                
+                                ${(() => {
+                                    const aktiveKredite = this.getAktiveKredite();
+                                    const kreditlast = this.getGesamtKreditlast();
+                                    
+                                    if (aktiveKredite.length === 0) {
+                                        return '<p class="text-center py-8 text-gray-500">Alle Kredite sind abbezahlt! 🎉</p>';
+                                    }
+                                    
+                                    return `
+                                        <!-- Gesamt-Übersicht -->
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                            <div class="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200">
+                                                <div class="text-sm text-red-700 font-semibold mb-1">Gesamte Restschuld</div>
+                                                <div class="text-2xl font-bold text-red-800">${this.formatCurrency(kreditlast.restschuld)}</div>
+                                            </div>
+                                            <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200">
+                                                <div class="text-sm text-orange-700 font-semibold mb-1">Monatliche Belastung</div>
+                                                <div class="text-2xl font-bold text-orange-800">${this.formatCurrency(kreditlast.monatlicheRate)}</div>
+                                            </div>
+                                            <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-xl border border-indigo-200">
+                                                <div class="text-sm text-indigo-700 font-semibold mb-1">Aktive Kredite</div>
+                                                <div class="text-2xl font-bold text-indigo-800">${kreditlast.anzahl}</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Kredit-Liste -->
+                                        <div class="space-y-3">
+                                            ${aktiveKredite.map(k => {
+                                                const details = this.calculateKreditDetails(k);
+                                                return `
+                                                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                                        <div class="flex items-start justify-between mb-2">
+                                                            <div class="flex-1">
+                                                                <h4 class="font-bold text-gray-800">${k.name}</h4>
+                                                                <p class="text-sm text-gray-600">${k.kategorie} • ${this.formatCurrency(k.rate)}/Monat</p>
+                                                            </div>
+                                                            <div class="text-right">
+                                                                <div class="text-sm text-gray-600">Restschuld</div>
+                                                                <div class="text-lg font-bold text-red-600">${this.formatCurrency(details.restschuld)}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="mb-2">
+                                                            <div class="flex justify-between text-xs mb-1">
+                                                                <span class="text-gray-600">Fortschritt</span>
+                                                                <span class="font-semibold">${details.fortschritt.toFixed(1)}%</span>
+                                                            </div>
+                                                            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                                                <div class="h-full bg-indigo-600 transition-all" style="width: ${Math.min(details.fortschritt, 100)}%"></div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-xs text-gray-600">
+                                                            Enddatum: ${this.formatDate(details.endDate.toISOString().split('T')[0])}
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    `;
+                                })()}
+                            </div>
+                        ` : ''}
 
                         <!-- Heatmap & Sankey -->
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -7784,26 +8295,32 @@ migrateData(fromVersion, toVersion) {
                                 id="openBrowserScanner" onclick="openReceiptScanner()"
                                 class="btn-primary w-full flex items-center justify-center gap-2"
                                 type="button">
-                                📷 Bon scannen
+                                <svg aria-hidden="true" focusable="false" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                                Bon scannen
                             </button>
                         </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3 mb-4">
-                            <input type="date" id="ausgDatum" value="${this.getTodayDateString()}" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                            <input type="text" id="ausgName" placeholder="Beschreibung" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                            <input type="number" id="ausgBetrag" placeholder="Betrag" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                            <select id="ausgKat" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                ${this.kategorien.map(k => `<option value="${k}">${k}</option>`).join('')}
-                            </select>
-                            <select id="ausgBenutzer" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                ${Object.values(this.benutzer).map(u => `
-                                    <option value="${u.id}" ${u.id === this.aktiverBenutzer ? 'selected' : ''}>
-                                        ${u.emoji} ${u.name}
-                                    </option>
-                                `).join('')}
-                            </select>
-                            <button onclick="app.addAusgabeFromForm()" class="btn-primary px-6 py-2 flex items-center justify-center gap-2">
-                                ${icons.plus} Hinzufügen
-                            </button>
+                        <div class="grid grid-cols-1 gap-3 mb-4">
+                            <!-- Mobile: 1 Spalte, Desktop: 3 Spalten -->
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <input type="date" id="ausgDatum" value="${this.getTodayDateString()}" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <input type="text" id="ausgName" placeholder="Beschreibung" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <input type="number" id="ausgBetrag" placeholder="Betrag" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <select id="ausgKat" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    ${this.kategorien.map(k => `<option value="${k}">${k}</option>`).join('')}
+                                </select>
+                                <select id="ausgBenutzer" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    ${Object.values(this.benutzer).map(u => `
+                                        <option value="${u.id}" ${u.id === this.aktiverBenutzer ? 'selected' : ''}>
+                                            ${u.emoji} ${u.name}
+                                        </option>
+                                    `).join('')}
+                                </select>
+                                <button onclick="app.addAusgabeFromForm()" class="btn-primary px-6 py-2 flex items-center justify-center gap-2">
+                                    ${icons.plus} Hinzufügen
+                                </button>
+                            </div>
                         </div>
                         <div class="space-y-3 max-h-96 overflow-y-auto">
                             ${ausgaben.map(a => `
@@ -7822,7 +8339,7 @@ migrateData(fromVersion, toVersion) {
                                                     ${h(this.benutzer[a.benutzer].emoji)} ${h(this.benutzer[a.benutzer].name)}
                                                 </span>
                                             ` : ''}
-                                            <span class="text-xs text-gray-600">${new Date(a.datum).toLocaleDateString('de-DE')}</span>
+                                            <span class="text-xs text-gray-600">${this.formatDate(a.datum)}</span>
                                         </div>
                                         <div class="flex items-center gap-3">
                                             <span class="font-bold text-gray-800">${this.formatCurrency(a.betrag)}</span>
@@ -7841,7 +8358,7 @@ migrateData(fromVersion, toVersion) {
                                             <div class="flex-1">
                                                 <div class="font-semibold text-gray-800 text-base">${h(a.name)}</div>
                                                 <div class="text-xs text-gray-500 mt-1">${h(a.kategorie)}</div>
-                                                <div class="text-xs text-gray-600 mt-1">${new Date(a.datum).toLocaleDateString('de-DE')}</div>
+                                                <div class="text-xs text-gray-600 mt-1">${this.formatDate(a.datum)}</div>
                                             </div>
                                             <div class="text-lg font-bold text-gray-800 ml-3">
                                                 ${this.formatCurrency(a.betrag)}
@@ -7876,9 +8393,9 @@ migrateData(fromVersion, toVersion) {
                     <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
                         <div class="flex items-center justify-between mb-4">
                             <h2 class="flex items-center gap-2 text-2xl font-bold text-gray-800">${icons.fileText} <span>Ausgaben-Vorlagen</span></h2>
-                            <a href="#" onclick="app.setTab('stammdaten'); return false;" class="text-sm text-indigo-600 hover:text-indigo-800 font-semibold">
-                                Vorlagen verwalten →
-                            </a>
+                            <button onclick="app.setTab('stammdaten')" class="text-sm px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors font-semibold">
+                                Verwalten →
+                            </button>
                         </div>
                         
                         <!-- Vorlagen Liste - nur Verwenden -->
@@ -7924,7 +8441,7 @@ migrateData(fromVersion, toVersion) {
                                     <div class="hidden md:flex items-center justify-between p-3">
                                         <div class="flex-1">
                                             <span class="font-semibold text-gray-700">${z.name}</span>
-                                            <span class="text-xs text-gray-600 ml-3">${new Date(z.datum).toLocaleDateString('de-DE')}</span>
+                                            <span class="text-xs text-gray-600 ml-3">${this.formatDate(z.datum)}</span>
                                         </div>
                                         <div class="flex items-center gap-3">
                                             <span class="font-bold text-gray-800">${this.formatCurrency(z.betrag)}</span>
@@ -7939,7 +8456,7 @@ migrateData(fromVersion, toVersion) {
                                         <div class="flex items-start justify-between mb-2">
                                             <div class="flex-1">
                                                 <div class="font-semibold text-gray-800 text-base">${z.name}</div>
-                                                <div class="text-xs text-gray-600 mt-1">${new Date(z.datum).toLocaleDateString('de-DE')}</div>
+                                                <div class="text-xs text-gray-600 mt-1">${this.formatDate(z.datum)}</div>
                                             </div>
                                             <div class="text-lg font-bold text-gray-800 ml-3">
                                                 ${this.formatCurrency(z.betrag)}
@@ -8034,96 +8551,6 @@ migrateData(fromVersion, toVersion) {
                             </div>
                         </div>
                     </div>
-
-                    <!-- Fixkosten Übersicht -->
-                    <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="flex items-center gap-2 text-2xl font-bold text-gray-800">${icons.home} <span>Fixkosten</span></h2>
-                            <a href="#" onclick="app.setTab('stammdaten'); return false;" class="text-sm text-indigo-600 hover:text-indigo-800 font-semibold">
-                                Fixkosten verwalten →
-                            </a>
-                        </div>
-                        <div class="space-y-3">
-                            ${this.fixkosten.map(f => {
-                                const toMonthly = (betrag, intervall) => {
-                                    switch(intervall) {
-                                        case 'vierteljährlich': return betrag / 3;
-                                        case 'halbjährlich': return betrag / 6;
-                                        case 'jährlich': return betrag / 12;
-                                        default: return betrag;
-                                    }
-                                };
-                                const monthly = toMonthly(f.betrag, f.intervall || 'monatlich');
-                                return `
-                                    <!-- Mobile: Card / Desktop: Horizontal -->
-                                    <div class="bg-gray-50 border border-gray-200 rounded-lg">
-                                        <!-- Desktop (>= 768px) -->
-                                        <div class="hidden md:flex items-center justify-between p-3">
-                                            <div class="flex-1 flex items-center gap-2 flex-wrap">
-                                                <span class="font-semibold text-gray-700">${f.name}</span>
-                                                <span class="text-xs text-gray-500">(${f.kategorie})</span>
-                                                ${f.benutzer ? `
-                                                    <span class="text-xs px-2 py-1 rounded inline-block" 
-                                                          style="background: ${f.benutzer === 'gemeinsam' ? '#f59e0b20' : (this.benutzer[f.benutzer]?.farbe + '20' || '#gray')}; 
-                                                                 color: ${f.benutzer === 'gemeinsam' ? '#f59e0b' : (this.benutzer[f.benutzer]?.farbe || '#666')}; 
-                                                                 border: 1px solid ${f.benutzer === 'gemeinsam' ? '#f59e0b40' : (this.benutzer[f.benutzer]?.farbe + '40' || '#gray')};">
-                                                        ${f.benutzer === 'gemeinsam' ? icons.users + ' Gemeinsam' : (this.benutzer[f.benutzer] ? this.benutzer[f.benutzer].emoji + ' ' + this.benutzer[f.benutzer].name : f.benutzer)}
-                                                    </span>
-                                                ` : ''}
-                                                <span class="text-xs px-2 py-1 rounded border ${(f.intervall || 'monatlich') === 'monatlich' ? 'bg-gray-100 text-gray-700 border-gray-300' : 'bg-purple-50 text-purple-700 border-purple-200'}">
-                                                    ${f.intervall || 'monatlich'}
-                                                </span>
-                                            </div>
-                                            <span class="font-bold text-gray-800 ml-3">${this.formatCurrency(monthly)}</span>
-                                        </div>
-                                        
-                                        <!-- Mobile (< 768px) -->
-                                        <div class="md:hidden p-4">
-                                            <div class="flex items-start justify-between mb-2">
-                                                <div class="flex-1">
-                                                    <div class="font-semibold text-gray-800 text-base">${f.name}</div>
-                                                    <div class="text-xs text-gray-500 mt-1">${f.kategorie}</div>
-                                                </div>
-                                                <div class="text-lg font-bold text-gray-800 ml-3">
-                                                    ${this.formatCurrency(monthly)}
-                                                </div>
-                                            </div>
-                                            <div class="flex flex-wrap gap-2">
-                                                ${f.benutzer ? `
-                                                    <span class="text-xs px-2 py-1 rounded inline-flex items-center gap-1" 
-                                                          style="background: ${f.benutzer === 'gemeinsam' ? '#f59e0b20' : (this.benutzer[f.benutzer]?.farbe + '20' || '#gray')}; 
-                                                                 color: ${f.benutzer === 'gemeinsam' ? '#f59e0b' : (this.benutzer[f.benutzer]?.farbe || '#666')}; 
-                                                                 border: 1px solid ${f.benutzer === 'gemeinsam' ? '#f59e0b40' : (this.benutzer[f.benutzer]?.farbe + '40' || '#gray')};">
-                                                        ${f.benutzer === 'gemeinsam' ? icons.users + '<span>Gemeinsam</span>' : (this.benutzer[f.benutzer] ? this.benutzer[f.benutzer].emoji + ' ' + this.benutzer[f.benutzer].name : f.benutzer)}
-                                                    </span>
-                                                ` : ''}
-                                                <span class="text-xs px-2 py-1 rounded border ${(f.intervall || 'monatlich') === 'monatlich' ? 'bg-gray-100 text-gray-700 border-gray-300' : 'bg-purple-50 text-purple-700 border-purple-200'}">
-                                                    ${f.intervall || 'monatlich'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                        <div class="mt-4 pt-4  flex justify-between items-center">
-                            <span class="font-semibold text-gray-700">Gesamt (monatlich):</span>
-                            <span class="text-xl font-bold text-red-800">${(() => {
-                                return this.fixkosten.reduce((sum, f) => {
-                                    const toMonthly = (betrag, intervall) => {
-                                        switch(intervall) {
-                                            case 'vierteljährlich': return betrag / 3;
-                                            case 'halbjährlich': return betrag / 6;
-                                            case 'jährlich': return betrag / 12;
-                                            default: return betrag;
-                                        }
-                                    };
-                                    return sum + toMonthly(f.betrag, f.intervall || 'monatlich');
-                                }, 0).toFixed(2);
-                            })()} €</span>
-                        </div>
-                    </div>
-
                     <!-- Top 5 Ausgaben -->
                     <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
                         <h2 class="flex items-center gap-2 text-2xl font-bold text-gray-800 mb-4">${icons.award} <span>Top 5 Ausgaben</span></h2>
@@ -8139,7 +8566,7 @@ migrateData(fromVersion, toVersion) {
                                         <div class="text-2xl font-bold text-indigo-600 w-8">#${index + 1}</div>
                                         <div class="flex-1">
                                             <div class="font-semibold text-gray-800">${ausgabe.name}</div>
-                                            <div class="text-xs text-gray-500">${ausgabe.kategorie} • ${new Date(ausgabe.datum).toLocaleDateString('de-DE')}</div>
+                                            <div class="text-xs text-gray-500">${ausgabe.kategorie} • ${this.formatDate(ausgabe.datum)}</div>
                                         </div>
                                         <div class="text-xl font-bold text-gray-700">${this.formatCurrency(ausgabe.betrag)}</div>
                                         </div>
@@ -8394,11 +8821,11 @@ migrateData(fromVersion, toVersion) {
                                                                 </span>
                                                             ` : ''}
                                                         </div>
-                                                        <div class="flex gap-1">
-                                                            <button onclick="app.editSparrate(${rate.id})" class="text-blue-500 hover:text-blue-700" title="Bearbeiten">
+                                                        <div class="flex gap-3">
+                                                            <button onclick="app.editSparrate(${rate.id})" class="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors" title="Bearbeiten">
                                                                 ${icons.edit}
                                                             </button>
-                                                            <button onclick="app.deleteSparrate(${rate.id})" class="text-red-500 hover:text-red-700" title="Löschen">
+                                                            <button onclick="app.deleteSparrate(${rate.id})" class="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors" title="Löschen">
                                                                 ${icons.trash}
                                                             </button>
                                                         </div>
@@ -8407,14 +8834,14 @@ migrateData(fromVersion, toVersion) {
                                             </div>
                                         ` : ''}
 
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-                                            <input type="number" id="sparrate_${konto.id}" placeholder="Betrag" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                                            <select id="sparrate_intervall_${konto.id}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                                            <input type="number" id="sparrate_${konto.id}" placeholder="Betrag" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                                            <select id="sparrate_intervall_${konto.id}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
                                                 <option value="monatlich">Monatlich</option>
                                                 <option value="vierteljährlich">Vierteljährlich</option>
                                                 <option value="jährlich">Jährlich</option>
                                             </select>
-                                            <select id="sparrate_benutzer_${konto.id}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                                            <select id="sparrate_benutzer_${konto.id}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
                                                 ${Object.values(this.benutzer).map(u => `
                                                     <option value="${u.id}" ${u.id === this.aktiverBenutzer ? 'selected' : ''}>
                                                         ${u.emoji} ${u.name}
@@ -8426,11 +8853,11 @@ migrateData(fromVersion, toVersion) {
                                             </button>
                                         </div>
 
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-                                            <input type="date" id="bewegung_datum_${konto.id}" value="${new Date().toISOString().split('T')[0]}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                                            <input type="number" id="bewegung_betrag_${konto.id}" placeholder="Betrag" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                                            <input type="text" id="bewegung_beschreibung_${konto.id}" placeholder="Beschreibung" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                                            <div class="flex gap-1">
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                                            <input type="date" id="bewegung_datum_${konto.id}" value="${new Date().toISOString().split('T')[0]}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                                            <input type="number" id="bewegung_betrag_${konto.id}" placeholder="Betrag" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                                            <input type="text" id="bewegung_beschreibung_${konto.id}" placeholder="Beschreibung" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                                            <div class="flex gap-3">
                                                 <button onclick="app.addBewegungFromForm(${konto.id}, 'einzahlung')" 
                                                         class="flex-1 px-2 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center" 
                                                         title="Einzahlung">
@@ -8454,7 +8881,7 @@ migrateData(fromVersion, toVersion) {
                                                                 <span class="${b.typ === 'einzahlung' ? 'text-green-600' : 'text-red-600'}">
                                                                     ${b.typ === 'einzahlung' ? icons.arrowUp : icons.arrowDown}
                                                                 </span>
-                                                                <span class="text-gray-600">${new Date(b.datum).toLocaleDateString('de-DE')}</span>
+                                                                <span class="text-gray-600">${this.formatDate(b.datum)}</span>
                                                                 <span class="text-gray-700">${b.beschreibung}</span>
                                                             </div>
                                                             <div class="flex items-center gap-2">
@@ -8462,7 +8889,8 @@ migrateData(fromVersion, toVersion) {
                                                                     ${b.typ === 'einzahlung' ? '+' : '-'}${this.formatCurrency(b.betrag)}
                                                                 </span>
                                                                 <button onclick="app.deleteKontobewegung(${konto.id}, ${b.id})" 
-                                                                        class="text-red-500 hover:text-red-700">
+                                                                        class="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors" 
+                                                                        title="Löschen">
                                                                     ${icons.trash}
                                                                 </button>
                                                             </div>
@@ -8837,29 +9265,35 @@ migrateData(fromVersion, toVersion) {
                         <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 mb-6">
                             <h2 class="flex items-center gap-2 text-2xl font-bold text-gray-800 mb-4">${icons.home} <span>Fixkosten</span></h2>
                             <p class="text-sm text-gray-600 mb-4">Diese Kosten gelten automatisch für jeden Monat und werden in den Berechnungen berücksichtigt.</p>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3 mb-4">
-                                <input type="text" id="fixName" placeholder="Name" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                <input type="number" id="fixBetrag" placeholder="Betrag" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                <select id="fixKat" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                    ${this.kategorien.map(k => `<option value="${k}">${k}</option>`).join('')}
-                                </select>
-                                <select id="fixIntervall" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                    <option value="monatlich">Monatlich</option>
-                                    <option value="vierteljährlich">Vierteljährlich</option>
-                                    <option value="halbjährlich">Halbjährlich</option>
-                                    <option value="jährlich">Jährlich</option>
-                                </select>
-                                <select id="fixBenutzer" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                    <option value="gemeinsam">${icons.users} Gemeinsam</option>
-                                    ${Object.values(this.benutzer).map(u => `
-                                        <option value="${u.id}" ${u.id === this.aktiverBenutzer ? 'selected' : ''}>
-                                            ${u.emoji} ${u.name}
-                                        </option>
-                                    `).join('')}
-                                </select>
-                                <button onclick="app.addFixkostenFromForm()" class="btn-primary px-6 py-2 flex items-center justify-center gap-2">
-                                    ${icons.plus} Hinzufügen
-                                </button>
+                            <div class="grid grid-cols-1 gap-3 mb-4">
+                                <!-- Zeile 1: Name, Betrag, Kategorie -->
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <input type="text" id="fixName" placeholder="Name" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <input type="number" id="fixBetrag" placeholder="Betrag" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <select id="fixKat" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        ${this.kategorien.map(k => `<option value="${k}">${k}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <!-- Zeile 2: Intervall, Benutzer, Button -->
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <select id="fixIntervall" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        <option value="monatlich">Monatlich</option>
+                                        <option value="vierteljährlich">Vierteljährlich</option>
+                                        <option value="halbjährlich">Halbjährlich</option>
+                                        <option value="jährlich">Jährlich</option>
+                                    </select>
+                                    <select id="fixBenutzer" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        <option value="gemeinsam">${icons.users} Gemeinsam</option>
+                                        ${Object.values(this.benutzer).map(u => `
+                                            <option value="${u.id}" ${u.id === this.aktiverBenutzer ? 'selected' : ''}>
+                                                ${u.emoji} ${u.name}
+                                            </option>
+                                        `).join('')}
+                                    </select>
+                                    <button onclick="app.addFixkostenFromForm()" class="btn-primary px-6 py-2 flex items-center justify-center gap-2">
+                                        ${icons.plus} Hinzufügen
+                                    </button>
+                                </div>
                             </div>
                             <div class="space-y-3">
                                 ${this.fixkosten.map(f => `
@@ -8938,8 +9372,144 @@ migrateData(fromVersion, toVersion) {
                             </div>
                         </div>
 
-                        <!-- Vorlagen -->
+                        <!-- Kredite -->
                         <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+                            <h2 class="flex items-center gap-2 text-2xl font-bold text-gray-800 mb-4">${icons.creditCard} <span>Kredite & Darlehen</span></h2>
+                            <p class="text-sm text-gray-600 mb-4">Verwalte deine laufenden Kredite und behalte die Restschuld im Blick.</p>
+                            
+                            <!-- Neuer Kredit -->
+                            <div class="grid grid-cols-1 gap-3 mb-4">
+                                <!-- Zeile 1: Name, Betrag, Zinssatz -->
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <input type="text" id="kreditName" placeholder="Name (z.B. Autokredit)" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <input type="number" id="kreditBetrag" placeholder="Kreditbetrag" step="0.01" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <input type="number" id="kreditZins" placeholder="Zinssatz %" step="0.01" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                </div>
+                                <!-- Zeile 2: Laufzeit, Rate, Startdatum -->
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <input type="number" id="kreditLaufzeit" placeholder="Laufzeit (Monate)" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <input type="number" id="kreditRate" placeholder="Monatliche Rate" step="0.01" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <input type="date" id="kreditStart" value="${new Date().toISOString().split('T')[0]}" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                </div>
+                                <!-- Zeile 3: Kategorie, Benutzer, Button -->
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <select id="kreditKat" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        <option value="Auto">Auto</option>
+                                        <option value="Immobilie">Immobilie</option>
+                                        <option value="Konsumkredit">Konsumkredit</option>
+                                        <option value="Bildung">Bildung</option>
+                                        <option value="Sonstiges">Sonstiges</option>
+                                    </select>
+                                    <select id="kreditBenutzer" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        <option value="gemeinsam">${icons.users} Gemeinsam</option>
+                                        ${Object.values(this.benutzer).map(u => `
+                                            <option value="${u.id}" ${u.id === this.aktiverBenutzer ? 'selected' : ''}>
+                                                ${u.emoji} ${u.name}
+                                            </option>
+                                        `).join('')}
+                                    </select>
+                                    <button onclick="app.addKreditFromForm()" class="btn-primary px-6 py-2 flex items-center justify-center gap-2">
+                                        ${icons.plus} Hinzufügen
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Kredite-Liste -->
+                            <div class="space-y-3">
+                                ${this.kredite.length === 0 ? `
+                                    <div class="text-center py-8 text-gray-500">
+                                        <p>Noch keine Kredite erfasst</p>
+                                    </div>
+                                ` : this.kredite.map(k => {
+                                    const details = this.calculateKreditDetails(k);
+                                    const katIcons = {
+                                        'Auto': icons.car,
+                                        'Immobilie': icons.building,
+                                        'Konsumkredit': icons.creditCard,
+                                        'Bildung': icons.book,
+                                        'Sonstiges': icons.dollarSign
+                                    };
+                                    
+                                    return `
+                                        <div class="bg-gray-50 border border-gray-200 rounded-lg hover:shadow-md transition-shadow p-4">
+                                            <div class="flex items-start justify-between mb-3">
+                                                <div class="flex-1">
+                                                    <div class="flex items-center gap-2 mb-1">
+                                                        <span class="text-gray-700">${katIcons[k.kategorie] || icons.dollarSign}</span>
+                                                        <h4 class="text-lg font-bold text-gray-800">${k.name}</h4>
+                                                        ${details.isAbbezahlt ? '<span class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full font-semibold">Abbezahlt</span>' : ''}
+                                                    </div>
+                                                    <p class="text-sm text-gray-600">${k.kategorie} • ${k.zinssatz}% Zinsen • ${k.laufzeit} Monate</p>
+                                                    ${k.benutzer ? `
+                                                        <span class="inline-block text-xs px-2 py-1 rounded mt-1" 
+                                                              style="background: ${k.benutzer === 'gemeinsam' ? '#f59e0b20' : (this.benutzer[k.benutzer]?.farbe + '20' || '#gray')}; 
+                                                                     color: ${k.benutzer === 'gemeinsam' ? '#f59e0b' : (this.benutzer[k.benutzer]?.farbe || '#666')}; 
+                                                                     border: 1px solid ${k.benutzer === 'gemeinsam' ? '#f59e0b40' : (this.benutzer[k.benutzer]?.farbe + '40' || '#gray')};">
+                                                            ${k.benutzer === 'gemeinsam' ? icons.users + ' Gemeinsam' : (this.benutzer[k.benutzer] ? this.benutzer[k.benutzer].emoji + ' ' + this.benutzer[k.benutzer].name : k.benutzer)}
+                                                        </span>
+                                                    ` : ''}
+                                                </div>
+                                                <div class="flex gap-2 ml-4">
+                                                    <button onclick="app.editKredit(${k.id})" class="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors" title="Bearbeiten">
+                                                        ${icons.edit}
+                                                    </button>
+                                                    <button onclick="app.deleteKredit(${k.id})" class="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors" title="Löschen">
+                                                        ${icons.trash}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Fortschrittsbalken -->
+                                            <div class="mb-3">
+                                                <div class="flex justify-between text-sm mb-1">
+                                                    <span class="text-gray-600">Fortschritt</span>
+                                                    <span class="font-semibold text-gray-800">${details.fortschritt.toFixed(1)}%</span>
+                                                </div>
+                                                <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                                                    <div class="h-full ${details.isAbbezahlt ? 'bg-green-500' : 'bg-indigo-600'} transition-all" style="width: ${Math.min(details.fortschritt, 100)}%"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Details Grid -->
+                                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                                <div>
+                                                    <div class="text-gray-600">Restschuld</div>
+                                                    <div class="font-bold text-lg ${details.isAbbezahlt ? 'text-green-600' : 'text-red-600'}">
+                                                        ${this.formatCurrency(details.restschuld)}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-gray-600">Monatliche Rate</div>
+                                                    <div class="font-bold text-lg text-gray-800">${this.formatCurrency(k.rate)}</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-gray-600">Gesamtzinsen</div>
+                                                    <div class="font-bold text-gray-800">${this.formatCurrency(details.gesamtZinsen)}</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-gray-600">Enddatum</div>
+                                                    <div class="font-semibold text-gray-800">${this.formatDate(details.endDate.toISOString().split('T')[0])}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                            
+                            ${this.kredite.length > 0 ? `
+                                <div class="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
+                                    <span class="font-semibold text-gray-700">Gesamte Restschuld:</span>
+                                    <span class="text-2xl font-bold text-red-800">${this.formatCurrency(this.getGesamtKreditlast().restschuld)}</span>
+                                </div>
+                                <div class="flex justify-between items-center mt-2">
+                                    <span class="font-semibold text-gray-700">Monatliche Belastung:</span>
+                                    <span class="text-xl font-bold text-gray-800">${this.formatCurrency(this.getGesamtKreditlast().monatlicheRate)}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- Vorlagen -->
+                        <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 mt-6">
                             <h2 class="flex items-center gap-2 text-2xl font-bold text-gray-800 mb-4">${icons.fileText} <span>Ausgaben-Vorlagen</span></h2>
                             <p class="text-sm text-gray-600 mb-4">Erstelle Vorlagen für häufig wiederkehrende Ausgaben.</p>
                             
@@ -9076,7 +9646,7 @@ migrateData(fromVersion, toVersion) {
       <video id="rsVideo" autoplay playsinline muted
              style="width:100%;border-radius:12px;background:#0b1220;"></video>
       <p style="margin-top:10px;font-size:12px;opacity:.75;">
-        Tipp: Bon flach hinlegen, gutes Licht, Kamera ruhig halten.
+        Tipp: Bon flach hinlegen, gut ausleuchten und die Kamera ruhig halten. QR-Codes werden automatisch erkannt.
       </p>
     </div>
 
@@ -9180,7 +9750,7 @@ async function rsStartCamera(){
   rsCapturedDataUrl = null;
   rsEl("rsPreviewImg").src = "";
   rsShowLive();
-  rsSetState(RS_STATE.CAMERA, "Kamera wird gestartet…");
+  rsSetState(RS_STATE.CAMERA, "Kamera wird vorbereitet …");
 
   try {
     rsStream = await navigator.mediaDevices.getUserMedia({
@@ -9197,7 +9767,7 @@ async function rsStartCamera(){
       setTimeout(resolve, 900);
     });
 
-    rsSetState(RS_STATE.CAMERA, "Kamera bereit. Tippe auf „Foto aufnehmen“.");
+    rsSetState(RS_STATE.CAMERA, "Bon oder QR-Code in den Rahmen halten");
   } catch(e) {
     console.error(e);
     rsSetState(RS_STATE.ERROR, "Kamera konnte nicht gestartet werden. Bitte Kamera-Berechtigung erlauben.");
@@ -9207,6 +9777,9 @@ async function rsStartCamera(){
 const VISION_OCR_ENDPOINT = "https://ocr-receipt-74837873538.europe-west3.run.app";
 
 function rsStopCamera(){
+  // Also stop QR + Barcode loops to avoid decoding on a dead stream
+  rsStopQrScan();
+  try { rsStopBarcodeScan(); } catch(e) {}
   try {
     if(rsStream){
       rsStream.getTracks().forEach(t => t.stop());
@@ -9217,6 +9790,394 @@ function rsStopCamera(){
 
 function rsEl(id){ return document.getElementById(id); }
 
+// ----------------------------------------
+// In-app confirm modal (replaces window.confirm)
+// - Injected on first use (no layout changes to existing modals)
+// ----------------------------------------
+function rsEnsureConfirmModal(){
+  if(document.getElementById("rsConfirmOverlay")) return;
+
+  const overlay = document.createElement("div");
+  overlay.id = "rsConfirmOverlay";
+  overlay.style.cssText = "position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;z-index:100000;background:rgba(0,0,0,.55);";
+
+  const dialog = document.createElement("div");
+  dialog.id = "rsConfirmDialog";
+  dialog.style.cssText = "width:100%;max-width:520px;border-radius:20px;overflow:hidden;background:var(--card-bg, #0b1220);border:1px solid rgba(255,255,255,.12);box-shadow:0 18px 60px rgba(0,0,0,.35);";
+
+  const header = document.createElement("div");
+  header.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08);";
+
+  const title = document.createElement("h3");
+  title.id = "rsConfirmTitle";
+  title.style.cssText = "margin:0;font-size:16px;line-height:1.2;";
+  title.textContent = "Bestätigen";
+
+  const pill = document.createElement("div");
+  pill.style.cssText = "display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;font-size:12px;opacity:.85;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);";
+  pill.innerHTML = "<span>Hinweis</span>";
+
+  header.appendChild(title);
+  header.appendChild(pill);
+
+  const body = document.createElement("div");
+  body.style.cssText = "padding:14px 18px 6px 18px;";
+  const text = document.createElement("p");
+  text.id = "rsConfirmText";
+  text.style.cssText = "margin:0;font-size:14px;line-height:1.35;opacity:.92;";
+  body.appendChild(text);
+
+  const footer = document.createElement("div");
+  footer.style.cssText = "display:flex;gap:10px;flex-wrap:wrap;padding:14px 18px 18px 18px;";
+
+  const ok = document.createElement("button");
+  ok.id = "rsConfirmOk";
+  ok.type = "button";
+  ok.className = "btn-primary w-full";
+  ok.textContent = "Übernehmen";
+
+  const cancel = document.createElement("button");
+  cancel.id = "rsConfirmCancel";
+  cancel.type = "button";
+  cancel.className = "secondary-btn w-full";
+  cancel.textContent = "Abbrechen";
+
+  footer.appendChild(ok);
+  footer.appendChild(cancel);
+
+  dialog.appendChild(header);
+  dialog.appendChild(body);
+  dialog.appendChild(footer);
+  overlay.appendChild(dialog);
+
+  // backdrop click cancels
+  overlay.addEventListener("click", (e) => {
+    if(e.target === overlay) {
+      cancel.click();
+    }
+  });
+
+  document.body.appendChild(overlay);
+}
+
+function rsConfirmDialog({ title="Bestätigen", text="", okText="Übernehmen", cancelText="Abbrechen" } = {}){
+  rsEnsureConfirmModal();
+  const overlay = document.getElementById("rsConfirmOverlay");
+  const t = document.getElementById("rsConfirmTitle");
+  const p = document.getElementById("rsConfirmText");
+  const ok = document.getElementById("rsConfirmOk");
+  const cancel = document.getElementById("rsConfirmCancel");
+
+  if(t) t.textContent = title;
+  if(p) p.textContent = text;
+  if(ok) ok.textContent = okText;
+  if(cancel) cancel.textContent = cancelText;
+
+  return new Promise(resolve => {
+    const cleanup = () => {
+      overlay.style.display = "none";
+      ok.onclick = null;
+      cancel.onclick = null;
+    };
+
+    ok.onclick = () => { cleanup(); resolve(true); };
+    cancel.onclick = () => { cleanup(); resolve(false); };
+
+    overlay.style.display = "flex";
+  });
+}
+
+
+// ========================================
+// QR scanning (optional, uses same camera feed)
+// - Runs in background while the scanner modal is open
+// - No layout changes: uses toast + confirm()
+// ========================================
+let rsQrTimer = null;
+let rsQrLast = "";
+let rsQrBusy = false;
+
+function rsStopQrScan(){
+  try { if (rsQrTimer) { clearInterval(rsQrTimer); rsQrTimer = null; } } catch(e){}
+  rsQrBusy = false;
+}
+
+// ========================================
+// Barcode scanning (EAN/UPC/Code128, etc.)
+// - Uses same camera feed (rsVideo)
+// - No layout changes: uses toast + confirm()
+// - Uses ZXingBrowser (lazy-loaded) for iOS compatibility
+// ========================================
+let rsBcControls = null;
+let rsBcLast = "";
+let rsBcActive = false;
+
+function rsStopBarcodeScan(){
+  rsBcActive = false;
+  try { if (rsBcControls && rsBcControls.stop) rsBcControls.stop(); } catch(e){}
+  rsBcControls = null;
+}
+
+function rsIsMaybeBarcode(payload){
+  const s = String(payload||"").trim();
+  // Common retail codes: EAN-13/8, UPC-A(12), UPC-E(6), Code128 etc.
+  // We accept digits 6-14 (to not block smaller codes), allow leading zeros.
+  return /^[0-9]{6,14}$/.test(s);
+}
+
+async function rsStartBarcodeScan(){
+  try {
+    if(rsBcActive) return;
+    const modal = rsEl("receiptScannerModal");
+    if(!modal || modal.style.display === "none") return;
+    if(rsState !== RS_STATE.CAMERA) return;
+
+    const video = rsEl("rsVideo");
+    if(!video || !video.srcObject) return;
+
+    // Load ZXing only when needed
+    if(window.ensureZXing) await window.ensureZXing();
+    if(!window.ZXingBrowser) return;
+
+    rsBcActive = true;
+
+    // Configure supported formats if enums are available (optional)
+    let hints;
+    try {
+      const ZX = window.ZXingBrowser;
+      if (ZX.DecodeHintType && ZX.BarcodeFormat) {
+        hints = new Map();
+        const formats = [
+          ZX.BarcodeFormat.EAN_13,
+          ZX.BarcodeFormat.EAN_8,
+          ZX.BarcodeFormat.UPC_A,
+          ZX.BarcodeFormat.UPC_E,
+          ZX.BarcodeFormat.CODE_128,
+          ZX.BarcodeFormat.CODE_39
+        ].filter(Boolean);
+        if (formats.length) hints.set(ZX.DecodeHintType.POSSIBLE_FORMATS, formats);
+      }
+    } catch(e){}
+
+    const ZX = window.ZXingBrowser;
+
+    // BrowserMultiFormatReader exists in newer versions; fallback to BrowserCodeReader if not.
+    let reader;
+    try {
+      reader = ZX.BrowserMultiFormatReader ? new ZX.BrowserMultiFormatReader(hints) : null;
+    } catch(e) { reader = null; }
+    if(!reader){
+      try { reader = new ZX.BrowserCodeReader(hints); } catch(e) { reader = null; }
+    }
+    if(!reader){
+      rsBcActive = false;
+      return;
+    }
+
+    // Continuous decode from the existing <video> element.
+    // Returns controls with .stop()
+    rsBcControls = await reader.decodeFromVideoElement(video, async (result, err, controls) => {
+      if(!rsBcControls && controls) rsBcControls = controls;
+      if(!rsBcActive) { try { controls && controls.stop && controls.stop(); } catch(e){}; return; }
+
+      // ignore NotFound errors; act on results
+      if(result && result.getText){
+        const payload = String(result.getText() || "").trim();
+        if(!payload) return;
+
+        // De-dupe and prefer numeric retail-like codes
+        if(payload === rsBcLast) return;
+        if(!rsIsMaybeBarcode(payload)) return;
+
+        rsBcLast = payload;
+
+        if(window.showToast) window.showToast("Barcode erkannt", "success");
+        rsStopBarcodeScan();
+
+        const ok = await rsConfirmDialog({ title: "Barcode erkannt", text: "Beträge und Datum sind meist nicht enthalten. Trotzdem übernehmen?", okText: "Übernehmen", cancelText: "Abbrechen" });
+        if(ok){
+          // Reuse the same flow as QR/OCR: parse payload and fill Ausgaben-Formfelder.
+          const parsed = rsParseQrPayload(payload);
+          const fields = rsExtractFieldsFromQr(parsed);
+          rsApplyQrToForm(fields);
+          if(window.showToast) window.showToast("Vorschläge übernommen. Bitte kurz prüfen.", "success");
+        } else {
+          // Resume after short delay
+          setTimeout(()=>{ try { rsStartBarcodeScan(); } catch(e){} }, 600);
+        }
+      }
+    });
+  } catch(e){
+    // Fail silently; barcode scanning is optional
+    rsBcActive = false;
+  }
+}
+
+function rsParseQrPayload(payload){
+  const raw = String(payload || "").trim();
+  if(!raw) return null;
+
+  // Try JSON
+  try {
+    const obj = JSON.parse(raw);
+    if(obj && typeof obj === "object") return { type:"json", raw, obj };
+  } catch(e){}
+
+  // Try URL params
+  try {
+    const u = new URL(raw);
+    const params = Object.fromEntries(u.searchParams.entries());
+    return { type:"url", raw, url: u, params };
+  } catch(e){}
+
+  return { type:"text", raw };
+}
+
+function rsExtractFieldsFromQr(qr){
+  const out = { datum:"", betrag:"", name:"" };
+
+  const takeAmount = (s) => {
+    const m = String(s||"").match(/\b\d{1,6}([.,]\d{2})\b/);
+    if(!m) return "";
+    return m[0].replace(",", ".");
+  };
+
+  const takeDate = (s) => {
+    const t = String(s||"");
+    // yyyy-mm-dd
+    let m = t.match(/\b\d{4}-\d{2}-\d{2}\b/);
+    if(m) return m[0];
+    // dd.mm.yyyy
+    m = t.match(/\b\d{2}[.\-/]\d{2}[.\-/]\d{4}\b/);
+    if(m){
+      const s2 = m[0].replace(/\//g,".").replace(/-/g,".");
+      const [d,mo,y] = s2.split(".");
+      return `${y}-${mo}-${d}`;
+    }
+    return "";
+  };
+
+  const firstNonEmpty = (...arr) => arr.find(v => String(v||"").trim()) || "";
+
+  if(qr.type === "json"){
+    const o = qr.obj || {};
+    out.name  = firstNonEmpty(o.name, o.desc, o.description, o.merchant, o.vendor, o.title);
+    out.betrag = firstNonEmpty(o.amount, o.total, o.sum, "");
+    if(!out.betrag) out.betrag = takeAmount(JSON.stringify(o));
+    out.datum = firstNonEmpty(o.date, o.datum, "");
+    if(!out.datum) out.datum = takeDate(JSON.stringify(o));
+  } else if(qr.type === "url"){
+    const p = qr.params || {};
+    out.name = firstNonEmpty(p.name, p.desc, p.description, p.merchant, p.vendor, p.title, qr.url?.hostname);
+    out.betrag = firstNonEmpty(p.amount, p.total, p.sum, "");
+    if(!out.betrag) out.betrag = takeAmount(qr.raw);
+    out.datum = firstNonEmpty(p.date, p.datum, "");
+    if(!out.datum) out.datum = takeDate(qr.raw);
+  } else {
+    out.name = qr.raw.length <= 80 ? qr.raw : qr.raw.slice(0, 80);
+    out.betrag = takeAmount(qr.raw);
+    out.datum = takeDate(qr.raw);
+  }
+
+  // normalize amount
+  if(out.betrag) out.betrag = String(out.betrag).replace(",", ".").replace(/[^0-9.]/g,"");
+  return out;
+}
+
+function rsApplyQrToForm(fields){
+  try {
+    const nameEl = document.getElementById("ausgName");
+    const betragEl = document.getElementById("ausgBetrag");
+    const datumEl = document.getElementById("ausgDatum");
+
+    if(fields.name && nameEl) nameEl.value = fields.name;
+    if(fields.betrag && betragEl) betragEl.value = fields.betrag;
+    if(fields.datum && datumEl) datumEl.value = fields.datum;
+
+    // Nudge UI update if your app listens to input events
+    if(nameEl) nameEl.dispatchEvent(new Event("input", {bubbles:true}));
+    if(betragEl) betragEl.dispatchEvent(new Event("input", {bubbles:true}));
+    if(datumEl) datumEl.dispatchEvent(new Event("input", {bubbles:true}));
+  } catch(e){}
+}
+
+async function rsStartQrScan(){
+  // Avoid scanning during OCR / preview / no camera
+  if(rsOcrInFlight) return;
+  if(rsQrTimer) return;
+
+  try {
+    await window.ensureJSQR?.();
+    if(!window.jsQR) return;
+  } catch(e){
+    return;
+  }
+
+  const video = rsEl("rsVideo");
+  if(!video) return;
+
+  // Small offscreen canvas for speed
+  const c = document.createElement("canvas");
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+
+  rsQrTimer = setInterval(async () => {
+    if(rsQrBusy) return;
+    if(!rsEl("receiptScannerModal") || rsEl("receiptScannerModal").style.display === "none") return;
+    if(rsState !== RS_STATE.CAMERA) return;
+    if(!video.videoWidth || !video.videoHeight) return;
+
+    rsQrBusy = true;
+    try {
+      // Center crop (QR codes are usually central). Keeps work small on iPhone.
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      const size = Math.min(vw, vh, 520);
+      const sx = Math.floor((vw - size) / 2);
+      const sy = Math.floor((vh - size) / 2);
+
+      const dw = 360; // decode resolution
+      const dh = 360;
+      c.width = dw; c.height = dh;
+      ctx.drawImage(video, sx, sy, size, size, 0, 0, dw, dh);
+
+      const img = ctx.getImageData(0, 0, dw, dh);
+      const code = window.jsQR(img.data, dw, dh, { inversionAttempts: "attemptBoth" });
+
+      if(code && code.data){
+        const payload = String(code.data).trim();
+        if(payload && payload !== rsQrLast){
+          rsQrLast = payload;
+
+          // Ask user before applying, keep modal/layout intact
+          if(window.showToast) window.showToast("QR-Code erkannt", "success");
+
+          // Prevent spamming: pause scanning until user reacts
+          rsStopQrScan();
+
+          const ok = await rsConfirmDialog({ title: "QR-Code erkannt", text: "Möchtest du die erkannten Daten übernehmen?", okText: "Übernehmen", cancelText: "Abbrechen" });
+          if(ok){
+            const parsed = rsParseQrPayload(payload);
+            const fields = rsExtractFieldsFromQr(parsed || {type:"text", raw:payload});
+            rsApplyQrToForm(fields);
+            // Close scanner; user can still scan receipts later
+            closeReceiptScanner();
+            if(window.showToast) window.showToast("Daten übernommen. Bitte kurz prüfen.", "success");
+          } else {
+            // resume scanning
+            rsQrLast = payload; // keep last to avoid immediate re-trigger
+            setTimeout(()=>{ try { rsStartQrScan(); } catch(e){} }, 600);
+          }
+        }
+      }
+    } catch(e){
+      // ignore decode errors
+    } finally {
+      rsQrBusy = false;
+    }
+  }, 220);
+}
+
+
 function rsShowLive() {
   rsEl("rsLiveWrap").style.display = "";
   rsEl("rsPreviewWrap").style.display = "none";
@@ -9224,7 +10185,7 @@ function rsShowLive() {
   rsEl("rsReshootBtn").style.display = "none";
   rsEl("rsScanBtn").style.display = "none";
   rsCapturedDataUrl = null;
-  rsEl("rsStatus").textContent = "Kamera bereit. Tippe auf „Foto aufnehmen“.";
+  rsEl("rsStatus").textContent = "Bon oder QR-Code in den Rahmen halten";
 }
 
 function rsShowPreview(dataUrl) {
@@ -9241,9 +10202,14 @@ async function openReceiptScanner(){
   rsEl("receiptScannerModal").style.display = "flex";
   rsShowLive();
   await rsStartCamera();
+  // QR + Barcode scanning run in background (same camera feed), no UI changes required
+  try { rsStartQrScan(); } catch(e){}
+  try { rsStartBarcodeScan(); } catch(e){}
 }
 
 function closeReceiptScanner(){
+  rsStopQrScan();
+
   rsStopCamera();
   rsEl("receiptScannerModal").style.display = "none";
   rsCapturedDataUrl = null;
@@ -9261,7 +10227,7 @@ function rsCaptureFrame(){
   const status = rsEl("rsStatus");
 
   if(!video.videoWidth || !video.videoHeight){
-    status.textContent = "Warte auf Kamerabild…";
+    status.textContent = "Kamera wird vorbereitet …";
     return;
   }
 
@@ -9289,7 +10255,7 @@ function rsCaptureFrame(){
   rsStopCamera();
 
   rsShowPreview(rsCapturedDataUrl);
-  rsSetState(RS_STATE.CAPTURED, "Vorschau bereit. Wenn alles passt: „Jetzt scannen“." );
+  rsSetState(RS_STATE.CAPTURED, "Vorschau OK? Dann „Jetzt scannen“.");
 }
 
 function rsNormalizeText(s){
@@ -9448,19 +10414,21 @@ async function rsScanNow(){
   }
 
   rsOcrInFlight = true;
-  rsSetState(RS_STATE.OCR, "OCR läuft…");
+  rsSetState(RS_STATE.OCR, "Beleg wird analysiert …");
 
   try {
     const fullText = await rsSendToVision(rsCapturedDataUrl);
 
     if(!fullText) {
-  status.textContent = "Kein Text erkannt. Bitte erneut aufnehmen.";
+  status.textContent = "Keine Daten erkannt. Du kannst die Angaben manuell eingeben.";
   // Speicher freigeben (DataURL kann groß sein)
   rsCapturedDataUrl = null;
   rsEl("rsPreviewImg").src = "";
   rsSetState(RS_STATE.ERROR);
   return;
 }
+
+    rsEl("rsStatus").textContent = "Daten werden zugeordnet …";
 
     const m = rsMerchantFromText(fullText);
     rsLastMerchantKey = m.key || null;
@@ -9476,7 +10444,7 @@ if(beschreibung && m.merchant) beschreibung.value = m.merchant;
     if(betrag && total != null) betrag.value = Number(total).toFixed(2);
     if(datum && dateISO) datum.value = dateISO;
 
-    rsSetState(RS_STATE.DONE, "Erkannt.");
+    rsSetState(RS_STATE.DONE, "Vorschläge übernommen. Bitte kurz prüfen.");
 
     // Clear image from memory ASAP
     rsCapturedDataUrl = null;
