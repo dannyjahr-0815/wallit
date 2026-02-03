@@ -162,6 +162,16 @@
            CSS VARIABLEN - Design System
            ========================================== */
         :root {
+            /* Spacing System - 8px Grid */
+            --space-0: 0;
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 20px;
+            --space-6: 24px;
+            --space-8: 32px;
+            
             /* Farben Light Mode - HOHER KONTRAST */
             --bg-primary: #ffffff;
             --bg-secondary: #f1f5f9;
@@ -195,11 +205,11 @@
             --transition-base: 200ms ease;
             --transition-slow: 300ms ease;
             
-            --radius-sm: 0.375rem;
-            --radius-md: 0.5rem;
-            --radius-lg: 0.75rem;
-            --radius-xl: 1rem;
-            --radius-2xl: 1.5rem;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --radius-2xl: 24px;
         }
         
         /* ==========================================
@@ -482,7 +492,7 @@
             
             .tab-active,
             .tab-inactive {
-                padding: 12px 16px;
+                padding: var(--space-3) var(--space-4);
                 min-width: auto;
             }
         }
@@ -690,12 +700,13 @@
         /* Primary Action Buttons - Indigo/Purple Gradient */
         .btn-primary {
             background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
-            border-radius: 12px;
-            transition: all 0.2s ease;
+            box-shadow: var(--shadow-md);
+            border-radius: var(--radius-md);
+            transition: var(--transition-base);
             border: none;
             color: white;
             font-weight: 600;
+            padding: var(--space-3) var(--space-4);
         }
         
         .btn-primary:hover {
@@ -706,18 +717,19 @@
         
         .btn-primary:active {
             transform: scale(0.98);
-            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+            box-shadow: var(--shadow-sm);
         }
         
         /* Success/Edit Buttons - Blue Gradient */
         .btn-edit {
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
-            border-radius: 8px;
-            transition: all 0.2s ease;
+            box-shadow: var(--shadow-md);
+            border-radius: var(--radius-md);
+            transition: var(--transition-base);
             border: none;
             color: white;
             font-weight: 600;
+            padding: var(--space-3) var(--space-4);
         }
         
         .btn-edit:hover {
@@ -729,12 +741,13 @@
         /* Save/Confirm Buttons - Green Gradient */
         .btn-save {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
-            border-radius: 8px;
-            transition: all 0.2s ease;
+            box-shadow: var(--shadow-md);
+            border-radius: var(--radius-md);
+            transition: var(--transition-base);
             border: none;
             color: white;
             font-weight: 600;
+            padding: var(--space-3) var(--space-4);
         }
         
         .btn-save:hover {
@@ -746,12 +759,13 @@
         /* Delete/Danger Buttons - Red Gradient */
         .btn-delete {
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
-            border-radius: 8px;
-            transition: all 0.2s ease;
+            box-shadow: var(--shadow-md);
+            border-radius: var(--radius-md);
+            transition: var(--transition-base);
             border: none;
             color: white;
             font-weight: 600;
+            padding: var(--space-3) var(--space-4);
         }
         
         .btn-delete:hover {
@@ -763,11 +777,12 @@
         /* Secondary/Cancel Buttons - Gray */
         .btn-secondary {
             background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.25);
-            border-radius: 8px;
-            transition: all 0.2s ease;
+            box-shadow: var(--shadow-md);
+            border-radius: var(--radius-md);
+            transition: var(--transition-base);
             border: none;
             color: white;
+            padding: var(--space-3) var(--space-4);
             font-weight: 600;
         }
         
@@ -897,7 +912,7 @@
             justify-content: center;
             z-index: 999998;
             backdrop-filter: blur(4px);
-            padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)) 16px;
+            padding: max(var(--space-4), env(safe-area-inset-top)) var(--space-4) max(var(--space-4), env(safe-area-inset-bottom)) var(--space-4);
             box-sizing: border-box;
             overflow-y: auto;
         }
@@ -923,7 +938,7 @@
             align-items: center;
             justify-content: center;
             z-index: 999998;
-            padding: 20px;
+            padding: var(--space-5);
             box-sizing: border-box;
             overflow-y: auto;
         }
@@ -940,13 +955,13 @@
         
         .modal-content {
             background: white;
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
             max-width: 500px;
             width: 100%;
             max-height: calc(100vh - 32px);
             overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: var(--shadow-xl);
             animation: modalSlideIn 0.3s ease-out;
             margin: auto;
         }
@@ -1404,9 +1419,9 @@
             position:fixed;
             left:0; right:0; bottom:0;
             height:88px;
-            padding: 14px 8px calc(8px + env(safe-area-inset-bottom));
+            padding: var(--space-3) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom));
             display:flex;
-            gap: 6px;
+            gap: var(--space-2);
             justify-content:space-between;
             align-items:stretch;
             background: rgba(255,255,255,0.92);
@@ -1423,14 +1438,14 @@
             flex-direction:column;
             align-items:center;
             justify-content:center;
-            gap: 6px;
-            border-radius: 14px;
+            gap: var(--space-1);
+            border-radius: var(--radius-md);
             font-weight: 600;
             font-size: 11px;
             letter-spacing: 0.01em;
             color: #6b7280;
             background: transparent;
-            padding: 10px 6px;
+            padding: var(--space-2) var(--space-2);
             border: none;
             min-height: 64px;
             cursor: pointer;
@@ -1775,6 +1790,82 @@
             box-shadow: 0 14px 28px rgba(0,0,0,0.45) !important;
         }
 
+        /* ==========================================
+           SIDEBAR NAVIGATION SYSTEM
+           ========================================== */
+        .sidebar-nav-container {
+            padding: var(--space-4);
+        }
+        
+        .sidebar-nav-title {
+            margin-bottom: var(--space-3);
+        }
+        
+        .sidebar-nav-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+        
+        .sidebar-nav-button {
+            padding: var(--space-3) var(--space-4);
+            gap: var(--space-3);
+            border-radius: var(--radius-lg);
+            transition: var(--transition-base);
+        }
+
+        /* ==========================================
+           ACTION BUTTONS (URL/Ändern, etc.)
+           ========================================== */
+        .action-btn-small {
+            padding: var(--space-1) var(--space-2);  /* 4px 8px */
+            gap: var(--space-1);                      /* 4px */
+            border-radius: var(--radius-sm);          /* 8px */
+            font-size: 0.75rem;                       /* 12px */
+            font-weight: 600;
+            transition: var(--transition-fast);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Action Button Variants */
+        .action-btn-primary {
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+        
+        .action-btn-primary:hover {
+            background: #e0e7ff;
+        }
+        
+        .action-btn-warning {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .action-btn-warning:hover {
+            background: #fde68a;
+        }
+        
+        body.dark-mode .action-btn-primary {
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+        }
+        
+        body.dark-mode .action-btn-primary:hover {
+            background: rgba(99, 102, 241, 0.25);
+        }
+        
+        body.dark-mode .action-btn-warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+        }
+        
+        body.dark-mode .action-btn-warning:hover {
+            background: rgba(245, 158, 11, 0.25);
+        }
+
     
 /* ========================================
    Robust Notification System (Final)
@@ -1792,8 +1883,8 @@
 
 .toast-notification {
     pointer-events: auto;
-    padding: 16px 22px;
-    border-radius: 16px;
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-lg);
     font-weight: 600;
     box-shadow: 0 20px 50px rgba(0,0,0,0.35);
     backdrop-filter: blur(14px);
@@ -1830,15 +1921,15 @@
 .notification-modal .fm-notify-btn{
     width: 100%;
     min-height: 52px;
-    padding: 14px 16px;
-    border-radius: 16px;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
     font-size: 16px;
     font-weight: 800;
     letter-spacing: 0.01em;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: var(--space-2);
     transition: transform 180ms ease, filter 180ms ease, box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease;
     user-select: none;
 }
@@ -1886,10 +1977,10 @@ body.dark-mode .notification-modal .fm-notify-secondary{
     justify-content: center;
     box-sizing: border-box;
     padding:
-        max(16px, env(safe-area-inset-top))
-        16px
-        max(16px, env(safe-area-inset-bottom))
-        16px;
+        max(var(--space-4), env(safe-area-inset-top))
+        var(--space-4)
+        max(var(--space-4), env(safe-area-inset-bottom))
+        var(--space-4);
     pointer-events: none;
     z-index: 999999;
 }
@@ -1900,8 +1991,8 @@ body.dark-mode .notification-modal .fm-notify-secondary{
     max-width: calc(100vw - 48px);
     max-height: 80%;
     overflow: auto;
-    padding: 14px 18px;
-    border-radius: 14px;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
     font-size: 15px;
     font-weight: 600;
     line-height: 1.4;
@@ -2013,7 +2104,7 @@ body.dark-mode .notification-modal .bg-blue-600{
         }
 
         .household-modal .hm-title{
-            margin: 0 0 12px 0;
+            margin: 0 0 var(--space-3) 0;
             font-weight: 700;
             letter-spacing: -0.01em;
             font-size: var(--hm-title);
@@ -2024,10 +2115,10 @@ body.dark-mode .notification-modal .bg-blue-600{
             display: block;
             font-weight: 500;
             font-size: var(--hm-label);
-            margin: 10px 0 6px 0;
+            margin: var(--space-2) 0 var(--space-2) 0;
         }
 
-        .household-modal .hm-field{ margin-bottom: 8px; }
+        .household-modal .hm-field{ margin-bottom: var(--space-2); }
 
         .household-modal .hm-input{
             border-radius: var(--hm-input-radius) !important;
@@ -2039,13 +2130,13 @@ body.dark-mode .notification-modal .bg-blue-600{
         .household-modal .hm-layout{
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: var(--space-4);
         }
 
         .household-modal .hm-list{
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: var(--space-3);
         }
 
         /* Cards */
@@ -2057,33 +2148,33 @@ body.dark-mode .notification-modal .bg-blue-600{
         .household-modal .hm-emoji{
             font-size: var(--hm-emoji);
             line-height: 1;
-            margin-bottom: 8px;
+            margin-bottom: var(--space-2);
         }
 
         .household-modal .hm-name{
             font-size: var(--hm-name);
             font-weight: 750;
             letter-spacing: -0.01em;
-            margin: 4px 0 2px 0;
+            margin: var(--space-1) 0 var(--space-1) 0;
         }
 
         .household-modal .hm-id{
             font-size: var(--hm-id);
             opacity: 0.9;
-            margin-bottom: 6px;
+            margin-bottom: var(--space-2);
         }
 
         .household-modal .hm-note{
-            margin-top: 6px;
+            margin-top: var(--space-2);
             font-size: var(--hm-note);
             opacity: 0.75;
         }
 
         .household-modal .hm-card-actions{
-            margin-top: 10px;
+            margin-top: var(--space-2);
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: var(--space-2);
         }
 
         /* Buttons: align with existing modal buttons (flat, no gradients) */
@@ -2104,10 +2195,10 @@ body.dark-mode .notification-modal .bg-blue-600{
 
         /* Bottom actions are always below the list now */
         .household-modal .hm-actions-bottom{
-            margin-top: 14px;
+            margin-top: var(--space-4);
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: var(--space-2);
         }
 
         /* Dark mode */
@@ -2194,10 +2285,10 @@ body.dark-mode .notification-modal .bg-blue-600{
   background: #eef2ff;              /* visible on white */
   color:#0f172a;
   border: 1px solid rgba(37,99,235,.25);
-  border-radius: 14px;
-  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
   font-weight: 700;
-  box-shadow: 0 10px 24px rgba(2,6,23,.10);
+  box-shadow: var(--shadow-lg);
   min-height: 54px;
 }
 .secondary-btn:active{
@@ -2220,13 +2311,13 @@ body.dark-mode .secondary-btn{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:12px;
+  gap: var(--space-3);
 }
 #receiptScannerModal .rs-pill{
   display:inline-flex;
   align-items:center;
-  gap:8px;
-  padding:6px 10px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2);
   border-radius:999px;
   font-size:12px;
   font-weight:800;
@@ -7517,10 +7608,10 @@ migrateData(fromVersion, toVersion) {
                                                     <span class="font-mono truncate">${this.userId.substring(0, 12)}...</span>
                                                 </div>
                                                 <div class="flex gap-1 flex-shrink-0">
-                                                    <button onclick="app.copyUserId()" class="px-2 py-1 bg-indigo-100 text-indigo-600 rounded text-xs font-semibold hover:bg-indigo-200 transition-colors" title="URL kopieren">
+                                                    <button onclick="app.copyUserId()" class="action-btn-small action-btn-primary" title="URL kopieren">
                                                         ${icons.clipboard}
                                                     </button>
-                                                    <button onclick="app.changeUserId()" class="px-2 py-1 bg-orange-100 text-orange-600 rounded text-xs font-semibold hover:bg-orange-200 transition-colors" title="ID ändern">
+                                                    <button onclick="app.changeUserId()" class="action-btn-small action-btn-warning" title="ID ändern">
                                                         ${icons.key}
                                                     </button>
                                                 </div>
@@ -7530,20 +7621,20 @@ migrateData(fromVersion, toVersion) {
                                         </div>
 
                                         <!-- Action Buttons - kompakt 2x2 Grid -->
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            <button onclick="app.syncToCloud()" class="btn-upload px-3 py-3 text-white rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-1 ${this.isSyncing ? 'opacity-50 cursor-not-allowed' : ''}" ${this.isSyncing ? 'disabled' : ''}>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2" style="gap: var(--space-2);">
+                                            <button onclick="app.syncToCloud()" class="btn-upload text-white font-semibold text-sm transition-all flex items-center justify-center ${this.isSyncing ? 'opacity-50 cursor-not-allowed' : ''}" style="padding: var(--space-3); gap: var(--space-1); border-radius: var(--radius-md);" ${this.isSyncing ? 'disabled' : ''}>
                                                 <span class="${this.isSyncing ? 'sync-animation' : ''}" style="display: flex; align-items: center;">${icons.cloud}</span>
                                                 <span>${this.isSyncing ? 'Sync...' : 'Hochladen'}</span>
                                             </button>
-                                            <button onclick="app.loadFromCloud()" class="btn-download px-3 py-3 text-white rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-1" ${this.isSyncing ? 'disabled' : ''}>
+                                            <button onclick="app.loadFromCloud()" class="btn-download text-white font-semibold text-sm transition-all flex items-center justify-center" style="padding: var(--space-3); gap: var(--space-1); border-radius: var(--radius-md);" ${this.isSyncing ? 'disabled' : ''}>
                                                 <span style="display: flex; align-items: center;">${icons.refresh}</span>
                                                 <span>Laden</span>
                                             </button>
-                                            <button onclick="app.exportToExcel()" class="btn-export px-3 py-3 text-white rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-1">
+                                            <button onclick="app.exportToExcel()" class="btn-export text-white font-semibold text-sm transition-all flex items-center justify-center" style="padding: var(--space-3); gap: var(--space-1); border-radius: var(--radius-md);">
                                                 <span style="display: flex; align-items: center;">${icons.download}</span>
                                                 <span>Excel Export</span>
                                             </button>
-                                            <button onclick="app.resetAllData()" class="btn-reset px-3 py-3 text-white rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-1">
+                                            <button onclick="app.resetAllData()" class="btn-reset text-white font-semibold text-sm transition-all flex items-center justify-center" style="padding: var(--space-3); gap: var(--space-1); border-radius: var(--radius-md);">
                                                 <span style="display: flex; align-items: center;">${icons.trash}</span>
                                                 <span>Alles zurücksetzen</span>
                                             </button>
@@ -7562,10 +7653,10 @@ migrateData(fromVersion, toVersion) {
                                             </div>
                                             <div class="text-xs text-gray-500 flex items-center gap-2">
                                                 <span>User ID: ${this.userId.substring(0, 20)}...</span>
-                                                <button onclick="app.copyUserId()" class="px-2 py-1 bg-indigo-100 text-indigo-600 rounded text-xs font-semibold hover:bg-indigo-200 transition-colors" title="URL mit User-ID kopieren">
+                                                <button onclick="app.copyUserId()" class="action-btn-small action-btn-primary" title="URL mit User-ID kopieren">
                                                     ${icons.clipboard} URL
                                                 </button>
-                                                <button onclick="app.changeUserId()" class="px-2 py-1 bg-orange-100 text-orange-600 rounded text-xs font-semibold hover:bg-orange-200 transition-colors" title="User-ID ändern">
+                                                <button onclick="app.changeUserId()" class="action-btn-small action-btn-warning" title="User-ID ändern">
                                                     ${icons.key} Ändern
                                                 </button>
                                             </div>
@@ -7597,22 +7688,22 @@ migrateData(fromVersion, toVersion) {
 
                             <!-- 👥 USER TABS - Haushalt Navigation -->
                             <div class="nav-section bg-white rounded-2xl border border-gray-100 p-4 mb-6 panel-card">
-                                <div class="flex items-center justify-between mb-4">
-                                    <div class="flex items-center gap-2">
+                                <div class="flex items-center justify-between" style="margin-bottom: var(--space-4);">
+                                    <div class="flex items-center" style="gap: var(--space-2);">
                                         ${icons.home}
                                         <span class="font-bold text-gray-800">${this.haushalt.name}</span>
                                     </div>
-                                    <button onclick="app.showUserManagement()" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2" title="Haushalt verwalten">
+                                    <button onclick="app.showUserManagement()" class="bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-semibold transition-colors flex items-center" style="padding: var(--space-2) var(--space-3); gap: var(--space-2);" title="Haushalt verwalten">
                                         ${icons.settings} Verwalten
                                     </button>
                                 </div>
                                 
-                                <div class="flex gap-3 overflow-x-auto pb-3 pt-3 px-2">
+                                <div class="flex overflow-x-auto" style="gap: var(--space-3); padding: var(--space-3) var(--space-2);">
                                     ${Object.values(this.benutzer).map(user => `
                                         <button 
                                             onclick="app.switchUser('${user.id}')" 
-                                            class="user-tab px-4 py-2 rounded-lg font-semibold transition-all whitespace-nowrap flex items-center gap-2 ${this.aktiverBenutzer === user.id ? 'user-tab-active' : 'user-tab-inactive'}"
-                                            style="border: 2px solid ${user.farbe}${this.aktiverBenutzer === user.id ? '; background: ' + user.farbe + '20' : ''}">
+                                            class="user-tab rounded-lg font-semibold transition-all whitespace-nowrap flex items-center ${this.aktiverBenutzer === user.id ? 'user-tab-active' : 'user-tab-inactive'}"
+                                            style="border: 2px solid ${user.farbe}${this.aktiverBenutzer === user.id ? '; background: ' + user.farbe + '20' : ''}; padding: var(--space-2) var(--space-4); gap: var(--space-2);">
                                             <span>${user.emoji}</span>
                                             <span>${user.name}</span>
                                         </button>
@@ -7623,22 +7714,22 @@ migrateData(fromVersion, toVersion) {
                             <div class="md:flex md:gap-6">
                                 <!-- Desktop Sidebar Navigation -->
                                 <aside class="hidden md:block md:w-72 lg:w-80 shrink-0">
-                                    <div class="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm sticky top-6 panel-card">
-                                        <div class="text-xs font-semibold text-gray-500 mb-3">Navigation</div>
-                                        <div class="space-y-2">
-                                            <button onclick="app.setTab('dashboard')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all shadow-sm ${this.activeTab === 'dashboard' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
+                                    <div class="sidebar-nav-container bg-white rounded-2xl border border-gray-100 shadow-sm sticky top-6 panel-card">
+                                        <div class="sidebar-nav-title text-xs font-semibold text-gray-500">Navigation</div>
+                                        <div class="sidebar-nav-list">
+                                            <button onclick="app.setTab('dashboard')" class="sidebar-nav-button w-full flex items-center font-bold transition-all shadow-sm ${this.activeTab === 'dashboard' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
                                                 ${icons.barChart} <span>Dashboard</span>
                                             </button>
-                                            <button onclick="app.setTab('month')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all shadow-sm ${this.activeTab === 'month' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
+                                            <button onclick="app.setTab('month')" class="sidebar-nav-button w-full flex items-center font-bold transition-all shadow-sm ${this.activeTab === 'month' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
                                                 ${icons.calendar} <span>Monat</span>
                                             </button>
-                                            <button onclick="app.setTab('year')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all shadow-sm ${this.activeTab === 'year' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
+                                            <button onclick="app.setTab('year')" class="sidebar-nav-button w-full flex items-center font-bold transition-all shadow-sm ${this.activeTab === 'year' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
                                                 ${icons.trending} <span>Jahr</span>
                                             </button>
-                                            <button onclick="app.setTab('investments')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all shadow-sm ${this.activeTab === 'investments' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
+                                            <button onclick="app.setTab('investments')" class="sidebar-nav-button w-full flex items-center font-bold transition-all shadow-sm ${this.activeTab === 'investments' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
                                                 ${icons.piggyBank} <span>Anlagen</span>
                                             </button>
-                                            <button onclick="app.setTab('stammdaten')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all shadow-sm ${this.activeTab === 'stammdaten' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
+                                            <button onclick="app.setTab('stammdaten')" class="sidebar-nav-button w-full flex items-center font-bold transition-all shadow-sm ${this.activeTab === 'stammdaten' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
                                                 ${icons.settings} <span>Stammdaten</span>
                                             </button>
                                         </div>
