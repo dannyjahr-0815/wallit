@@ -2023,6 +2023,54 @@ body.dark-mode .notification-modal .fm-notify-secondary{
     }
 }
 
+
+/* ✅ v15.2: Outdated-Data Modal — Mobile Button Text Wrapping Fix */
+.notification-modal button.notify-btn{
+    height: auto !important;          /* override global 44px button height */
+    min-height: 58px !important;
+    padding: 14px 16px !important;
+    border-radius: 16px !important;
+    font-weight: 800 !important;
+    font-size: 16px !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+    text-align: center !important;
+}
+
+.notification-modal .nm-btn-inner{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.notification-modal .nm-btn-icon{
+    flex: 0 0 auto;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.notification-modal .nm-btn-text{
+    display: block;
+}
+
+.notification-modal .nm-btn-sub{
+    display: block;
+    margin-top: 2px;
+    font-size: 0.92em;
+    opacity: 0.95;
+    font-weight: 800;
+}
+
+@media (max-width: 375px){
+    .notification-modal button.notify-btn{
+        font-size: 15px !important;
+        padding: 13px 14px !important;
+        min-height: 56px !important;
+    }
+    .notification-modal .nm-btn-icon{ font-size: 17px; }
+}
+
 .toast-container{
     position: fixed;
     top: 0; 
@@ -4156,15 +4204,27 @@ migrateData(fromVersion, toVersion) {
                             <strong>Empfehlung:</strong> Lade zuerst die aktuellen Cloud-Daten, bevor du Änderungen machst.
                         </div>
                         <div class="flex flex-col gap-2">
-                            <button onclick="app.loadInitialCloudData()" 
-                                    class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all">
-                                ✓ Jetzt Cloud-Daten laden (empfohlen)
+                            <button onclick="app.loadInitialCloudData()"
+                                    class="notify-btn w-full bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:shadow-lg transition-all">
+                                <div class="nm-btn-inner">
+                                    <div class="nm-btn-icon">✓</div>
+                                    <div class="nm-btn-text">
+                                        Jetzt Cloud-Daten laden
+                                        <div class="nm-btn-sub">(empfohlen)</div>
+                                    </div>
+                                </div>
                             </button>
-                            <button onclick="app.continueWithLocalData()" 
-                                    class="w-full bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-orange-600 transition-all">
-                                ⚠️ Trotzdem mit lokalen Daten weitermachen
+                            <button onclick="app.continueWithLocalData()"
+                                    class="notify-btn w-full bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-all">
+                                <div class="nm-btn-inner">
+                                    <div class="nm-btn-icon">!</div>
+                                    <div class="nm-btn-text">
+                                        Trotzdem mit lokalen Daten
+                                        <div class="nm-btn-sub">weitermachen</div>
+                                    </div>
+                                </div>
                             </button>
-                        </div>
+                                                </div>
                     </div>
                 `;
                 document.body.appendChild(notification);
