@@ -2299,6 +2299,12 @@ body.dark-mode .notification-modal .bg-blue-600{
                 gap: 12px;
             }
         }
+
+
+/* ========================================
+   Toast: always above modals (fix for Kredit actions)
+   ======================================== */
+.toast-container{ z-index: 1000002 !important; }
 </style>
 
 <style>
@@ -4615,27 +4621,42 @@ migrateData(fromVersion, toVersion) {
                 return `${year}-${month}-${day}`;
             }
 
-            showNotification(message, type = 'info', duration = 3000) {
-                // Remove existing notification
+            showNotification(message, type = 'success', duration = 2600) {
+                // Prefer shared global toast if available (keeps behavior consistent everywhere)
+                try {
+                    if (typeof window.showToast === 'function') {
+                        window.showToast(message, type);
+                        return;
+                    }
+                } catch {}
+
+                const msg = (message == null ? '' : String(message)).replace(/[\u0000-\u001F\u007F]/g, '').trim();
+                if (!msg) return;
+
+                // Ensure a single toast at a time
                 document.querySelector('.toast-container')?.remove();
-                
-                // Create container
+
                 const container = document.createElement('div');
                 container.className = 'toast-container';
-                
-                // Create notification
+
                 const toast = document.createElement('div');
                 toast.className = 'toast-notification toast-' + (type === 'error' ? 'error' : 'success');
-                toast.textContent = message;
-                
+                toast.textContent = msg;
+
                 container.appendChild(toast);
                 document.body.appendChild(container);
-                
-                // Auto-remove after duration
-                setTimeout(() => {
-                    container.remove();
-                }, duration);
+
+                // Fade out & remove
+                const removeToast = () => {
+                    if (!container.isConnected) return;
+                    container.style.opacity = '0';
+                    container.style.transition = 'opacity 0.25s ease';
+                    setTimeout(() => container.remove(), 260);
+                };
+
+                setTimeout(removeToast, Math.max(800, Number(duration) || 2600));
             }
+
 
             changeUserId() {
                 // Modal mit Input-Feld für User-ID
