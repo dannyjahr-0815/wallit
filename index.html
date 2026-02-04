@@ -341,14 +341,6 @@
             cursor: pointer;
         }
         
-        /* iOS Date Input Fix - verhindert Overflow und zentrierten Text */
-        input[type="date"] {
-            max-width: 100%;
-            width: 100%;
-            box-sizing: border-box;
-            text-align: left !important;
-        }
-        
         /* Statistik-Karten im Dark Mode */
         body.dark-mode .from-blue-50,
         body.dark-mode .from-green-50,
@@ -1407,6 +1399,7 @@
 
         /* Inputs in Modals (falls separat genutzt) */
         .modal-input {
+            width: 100%;
             height: var(--fm-control-height) !important;
             min-height: var(--fm-control-height) !important;
             padding-top: 0 !important;
