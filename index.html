@@ -3922,13 +3922,23 @@ migrateData(fromVersion, toVersion) {
     let einkommenItems = 0;
     for (const k in monthsEinkommen) einkommenItems += countArr(monthsEinkommen[k]);
 
-    // Fixkosten/Sparkonten/Sparraten/Kredite sind i.d.R. Arrays
+    // Arrays: Anzahl + Checksumme für Änderungserkennung
     const fix = countArr(this.fixkosten);
     const sk = countArr(this.sparkonten);
     const sr = countArr(this.sparraten);
     const kred = countArr(this.kredite);
     
-    // Für Kredite: Summe der IDs und Beträge als Fingerprint (erkennt Änderungen)
+    // Checksummen: ID + Betrag als Fingerprint (erkennt Bearbeitungen)
+    let fixSum = 0;
+    if (Array.isArray(this.fixkosten)) {
+        this.fixkosten.forEach(f => fixSum += (f.id || 0) + Math.round((f.betrag || 0) * 100));
+    }
+    
+    let skSum = 0;
+    if (Array.isArray(this.sparkonten)) {
+        this.sparkonten.forEach(s => skSum += (s.id || 0) + Math.round((s.betrag || 0) * 100));
+    }
+    
     let kredSum = 0;
     if (Array.isArray(this.kredite)) {
         this.kredite.forEach(k => {
@@ -3940,7 +3950,7 @@ migrateData(fromVersion, toVersion) {
     const ausKeys = countObj(monthsAusgaben);
     const einKeys = countObj(monthsEinkommen);
 
-    return `v4|fix:${fix}|sk:${sk}|sr:${sr}|kred:${kred}|kredSum:${kredSum}|ausM:${ausKeys}|einM:${einKeys}|ausI:${ausgabenItems}|einI:${einkommenItems}`;
+    return `v5|fix:${fix}:${fixSum}|sk:${sk}:${skSum}|sr:${sr}|kred:${kred}:${kredSum}|ausM:${ausKeys}|einM:${einKeys}|ausI:${ausgabenItems}|einI:${einkommenItems}`;
 }
 
             
@@ -3962,7 +3972,17 @@ migrateData(fromVersion, toVersion) {
     const sr = countArr(cloudData && cloudData.sparraten);
     const kred = countArr(cloudData && cloudData.kredite);
     
-    // Für Kredite: Summe der IDs und Beträge als Fingerprint (erkennt Änderungen)
+    // Checksummen für Änderungserkennung
+    let fixSum = 0;
+    if (cloudData && Array.isArray(cloudData.fixkosten)) {
+        cloudData.fixkosten.forEach(f => fixSum += (f.id || 0) + Math.round((f.betrag || 0) * 100));
+    }
+    
+    let skSum = 0;
+    if (cloudData && Array.isArray(cloudData.sparkonten)) {
+        cloudData.sparkonten.forEach(s => skSum += (s.id || 0) + Math.round((s.betrag || 0) * 100));
+    }
+    
     let kredSum = 0;
     if (cloudData && Array.isArray(cloudData.kredite)) {
         cloudData.kredite.forEach(k => {
@@ -3973,7 +3993,7 @@ migrateData(fromVersion, toVersion) {
     const ausKeys = countObj(monthsAusgaben);
     const einKeys = countObj(monthsEinkommen);
 
-    return `v4|fix:${fix}|sk:${sk}|sr:${sr}|kred:${kred}|kredSum:${kredSum}|ausM:${ausKeys}|einM:${einKeys}|ausI:${ausgabenItems}|einI:${einkommenItems}`;
+    return `v5|fix:${fix}:${fixSum}|sk:${sk}:${skSum}|sr:${sr}|kred:${kred}:${kredSum}|ausM:${ausKeys}|einM:${einKeys}|ausI:${ausgabenItems}|einI:${einkommenItems}`;
 }
 
             
