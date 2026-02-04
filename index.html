@@ -324,10 +324,10 @@
         
         /* Select Dropdown Pfeil im Dark Mode - muss direkt nach der Regel oben kommen */
         body.dark-mode select {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
             background-repeat: no-repeat !important;
             background-position: right 1rem center !important;
-            background-size: 12px !important;
+            background-size: 16px !important;
         }
         
         body.dark-mode input::placeholder,
@@ -1390,10 +1390,10 @@
             appearance: none;
             -webkit-appearance: none;
             -moz-appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 1rem center;
-            background-size: 12px;
+            background-size: 16px;
             padding-right: 2.5rem !important;
         }
 
@@ -5774,7 +5774,7 @@ migrateData(fromVersion, toVersion) {
                                 <input type="text" id="editKreditName" value="${kredit.name}" class="modal-input">
                             </div>
                             
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-sm font-semibold text-gray-700 mb-2">Kreditbetrag (€)</label>
                                     <input type="number" id="editKreditBetrag" value="${kredit.betrag}" step="0.01" class="modal-input">
@@ -5785,7 +5785,7 @@ migrateData(fromVersion, toVersion) {
                                 </div>
                             </div>
                             
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-sm font-semibold text-gray-700 mb-2">Zinssatz (%)</label>
                                     <input type="number" id="editKreditZins" value="${kredit.zinssatz}" step="0.01" class="modal-input">
@@ -5817,7 +5817,7 @@ migrateData(fromVersion, toVersion) {
                                 </div>
                             </div>
                             
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-sm font-semibold text-gray-700 mb-2">Startdatum</label>
                                     <input type="date" id="editKreditStart" value="${kredit.startdatum}" class="modal-input">
@@ -7308,11 +7308,14 @@ migrateData(fromVersion, toVersion) {
                 const fixkosten = this.fixkosten.reduce((sum, f) => sum + f.betrag, 0);
                 const sparraten = this.getMonatlicheSparraten();
                 
+                // Berechne Kreditraten für diesen Monat
+                const kreditraten = this.getAktiveKredite().reduce((sum, k) => sum + k.rate, 0);
+                
                 const gesamtEinkommen = einkommen + zusatzeinkommen;
-                const gesamtAusgaben = ausgaben + fixkosten + sparraten;
+                const gesamtAusgaben = ausgaben + fixkosten + sparraten + kreditraten;
                 const verfuegbar = gesamtEinkommen - gesamtAusgaben;
                 
-                const result = { einkommen, zusatzeinkommen, ausgaben, fixkosten, sparraten, gesamtEinkommen, gesamtAusgaben, verfuegbar };
+                const result = { einkommen, zusatzeinkommen, ausgaben, fixkosten, sparraten, kreditraten, gesamtEinkommen, gesamtAusgaben, verfuegbar };
                 
                 // 🚀 PERFORMANCE: In Cache speichern
                 this.setCached('stats', cacheKey, result);
@@ -7332,6 +7335,7 @@ migrateData(fromVersion, toVersion) {
                 let totalFixkosten = 0;
                 let totalAusgaben = 0;
                 let totalSparraten = 0;
+                let totalKreditraten = 0;
                 
                 for (let i = 1; i <= 12; i++) {
                     const month = `${this.currentYear}-${String(i).padStart(2, '0')}`;
@@ -7349,6 +7353,7 @@ migrateData(fromVersion, toVersion) {
                     totalFixkosten += stats.fixkosten;
                     totalAusgaben += stats.ausgaben;
                     totalSparraten += stats.sparraten;
+                    totalKreditraten += (stats.kreditraten || 0);
                     
                     const ausgaben = this.ausgabenAll[month] || [];
                     ausgaben.forEach(a => {
@@ -7356,7 +7361,7 @@ migrateData(fromVersion, toVersion) {
                     });
                 }
                 
-                const totalVerfuegbar = (totalEinkommen + totalZusatzeinkommen) - (totalFixkosten + totalAusgaben + totalSparraten);
+                const totalVerfuegbar = (totalEinkommen + totalZusatzeinkommen) - (totalFixkosten + totalAusgaben + totalSparraten + totalKreditraten);
                 
                 return {
                     months,
@@ -7369,6 +7374,7 @@ migrateData(fromVersion, toVersion) {
                     totalFixkosten,
                     totalAusgaben,
                     totalSparraten,
+                    totalKreditraten,
                     totalVerfuegbar
                 };
             }
@@ -8511,6 +8517,7 @@ migrateData(fromVersion, toVersion) {
                     const nodes = [
                         { name: 'Einkommen' },
                         { name: 'Fixkosten' },
+                        { name: 'Kreditraten' },
                         { name: 'Sparraten' },
                         ...Object.keys(categoryTotals).map(k => ({ name: k })),
                         { name: 'Verfügbar' }
@@ -8518,11 +8525,12 @@ migrateData(fromVersion, toVersion) {
                     
                     const links = [
                         { source: 0, target: 1, value: stats.fixkosten },
-                        { source: 0, target: 2, value: stats.sparraten }
+                        { source: 0, target: 2, value: stats.kreditraten || 0 },
+                        { source: 0, target: 3, value: stats.sparraten }
                     ];
                     
                     Object.keys(categoryTotals).forEach((cat, idx) => {
-                        links.push({ source: 0, target: 3 + idx, value: categoryTotals[cat] });
+                        links.push({ source: 0, target: 4 + idx, value: categoryTotals[cat] });
                     });
                     
                     links.push({ source: 0, target: nodes.length - 1, value: Math.max(0, stats.verfuegbar) });
@@ -8980,12 +8988,17 @@ migrateData(fromVersion, toVersion) {
                             <div class="text-2xl font-bold text-red-800">${this.formatCurrency(yearlyStats.totalFixkosten)}</div>
                             <div class="text-xs text-red-600 mt-1">∅ ${(yearlyStats.totalFixkosten / 12).toFixed(2)} €/Monat</div>
                         </div>
+                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl shadow-md border border-purple-200">
+                            <div class="text-xs sm:text-sm text-purple-700 font-semibold mb-1"><div class="flex items-center gap-1.5"><span class="shrink-0">${icons.creditCard}</span><span class="break-all">Gesamt Kreditraten</span></div></div>
+                            <div class="text-2xl font-bold text-purple-800">${this.formatCurrency(yearlyStats.totalKreditraten)}</div>
+                            <div class="text-xs text-purple-600 mt-1">∅ ${(yearlyStats.totalKreditraten / 12).toFixed(2)} €/Monat</div>
+                        </div>
                         <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl shadow-md border border-orange-200">
                             <div class="text-xs sm:text-sm text-orange-700 font-semibold mb-1"><div class="flex items-center gap-1.5"><span class="shrink-0">${icons.shoppingCart}</span><span class="break-all">Gesamt Ausgaben</span></div></div>
                             <div class="text-2xl font-bold text-orange-800">${this.formatCurrency(yearlyStats.totalAusgaben)}</div>
                             <div class="text-xs text-orange-600 mt-1">∅ ${(yearlyStats.totalAusgaben / 12).toFixed(2)} €/Monat</div>
                         </div>
-                        <div class="md:col-span-2 bg-gradient-to-br ${yearlyStats.totalVerfuegbar >= 0 ? 'from-green-50 to-green-100 border-green-200' : 'from-red-50 to-red-100 border-red-200'} p-6 rounded-xl shadow-md border">
+                        <div class="bg-gradient-to-br ${yearlyStats.totalVerfuegbar >= 0 ? 'from-green-50 to-green-100 border-green-200' : 'from-red-50 to-red-100 border-red-200'} p-6 rounded-xl shadow-md border">
                             <div class="flex items-center gap-2 text-sm font-semibold ${yearlyStats.totalVerfuegbar >= 0 ? 'text-green-700' : 'text-red-700'} mb-1">${icons.gem} <span>Gespart</span></div>
                             <div class="text-2xl font-bold ${yearlyStats.totalVerfuegbar >= 0 ? 'text-green-800' : 'text-red-800'}">${this.formatCurrency(yearlyStats.totalVerfuegbar)}</div>
                             <div class="text-xs ${yearlyStats.totalVerfuegbar >= 0 ? 'text-green-600' : 'text-red-600'} mt-1">∅ ${avgSparquote.toFixed(1)}% Sparquote</div>
