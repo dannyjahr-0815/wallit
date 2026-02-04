@@ -3852,7 +3852,9 @@ migrateData(fromVersion, toVersion) {
                     this.cloudLastModified = cloudTimestamp;
                     
                     // Wenn lokale Daten leer sind (neue Installation)
-                    const hasLocalData = this.ausgabenAll && Object.keys(this.ausgabenAll).length > 0;
+                    const hasLocalData = (this.ausgabenAll && Object.keys(this.ausgabenAll).length > 0) || 
+                                        (this.fixkosten && this.fixkosten.length > 0) ||
+                                        (this.kredite && this.kredite.length > 0);
                     
                     if (!hasLocalData) {
                         // Keine lokalen Daten - frage ob laden
