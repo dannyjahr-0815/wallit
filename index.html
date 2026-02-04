@@ -209,8 +209,8 @@ setTimeout(() => {
       
       --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
       --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
-      --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.18);
-      --shadow-xl: 0 20px 30px rgba(0, 0, 0, 0.22);
+      --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.55);
+      --shadow-xl: 0 18px 36px rgba(0, 0, 0, 0.62);
       
       --transition-fast: 150ms ease;
       --transition-base: 200ms ease;
@@ -245,18 +245,18 @@ setTimeout(() => {
       --text-secondary: #c0c0c0;
       --text-tertiary: #a0a0a0;
       
-      --border-light: rgba(102, 126, 234, 0.35);
-      --border-medium: rgba(102, 126, 234, 0.5);
-      --border-dark: rgba(102, 126, 234, 0.5);
+      --border-light: rgba(255, 255, 255, 0.10);
+      --border-medium: rgba(255, 255, 255, 0.14);
+      --border-dark: rgba(255, 255, 255, 0.18);
       
       --accent-primary: #818cf8;
       --accent-secondary: #a78bfa;
       --accent-hover: #a5b4fc;
       
-      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-      --shadow-md: 0 4px 12px rgba(102, 126, 234, 0.2);
-      --shadow-lg: 0 10px 20px rgba(102, 126, 234, 0.3);
-      --shadow-xl: 0 20px 30px rgba(102, 126, 234, 0.4);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+      --shadow-md: 0 6px 14px rgba(0, 0, 0, 0.45);
+      --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.55);
+      --shadow-xl: 0 18px 36px rgba(0, 0, 0, 0.62);
       
       /* Legacy Styles (werden nach und nach durch Variablen ersetzt) */
       background: #1a1a2e;
@@ -273,7 +273,7 @@ setTimeout(() => {
     
     body.dark-mode .bg-white {
       background: rgba(30, 30, 50, 0.8) !important;
-      border-color: rgba(102, 126, 234, 0.3) !important;
+      border-color: rgba(255, 255, 255, 0.10) !important;
     }
     
     body.dark-mode .text-[color:var(--text-primary)],
@@ -314,12 +314,12 @@ setTimeout(() => {
     
     body.dark-mode .border-gray-100,
     body.dark-mode .border-gray-200 {
-      border-color: rgba(102, 126, 234, 0.3) !important;
+      border-color: rgba(255, 255, 255, 0.10) !important;
     }
     
     /* Navigation Sections: Subtiler Border im Dark Mode */
     body.dark-mode .nav-section {
-      border-color: rgba(102, 126, 234, 0.15) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
     }
     
     body.dark-mode .bg-gray-50 {
@@ -330,7 +330,7 @@ setTimeout(() => {
     body.dark-mode select {
       background: rgba(50, 50, 70, 0.8) !important;
       color: #e0e0e0 !important;
-      border-color: rgba(102, 126, 234, 0.4) !important;
+      border-color: rgba(255, 255, 255, 0.14) !important;
     }
     
     /* Select Dropdown Pfeil im Dark Mode - muss direkt nach der Regel oben kommen */
@@ -444,8 +444,8 @@ setTimeout(() => {
     .tab-active {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      border: 2px solid rgba(102, 126, 234, 0.3);
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.10);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
     .tab-inactive {
       background: white;
@@ -512,7 +512,7 @@ setTimeout(() => {
     
     body.dark-mode .user-tab-inactive:hover {
       opacity: 0.8;
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
       filter: grayscale(0%);
     }
     
@@ -607,12 +607,12 @@ setTimeout(() => {
     body.dark-mode .tab-inactive {
       background: rgba(40, 40, 60, 0.6);
       color: #b0b0b0;
-      border: 2px solid rgba(102, 126, 234, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.08);
     }
 
     body.dark-mode .tab-active {
-      border: 2px solid rgba(102, 126, 234, 0.4);
-      box-shadow: 0 2px 12px rgba(102, 126, 234, 0.3);
+      border: 2px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
     }
     
     .sync-animation {
@@ -652,13 +652,13 @@ setTimeout(() => {
     body.dark-mode button:hover:not(:disabled), 
     body.dark-mode .btn-zoom:hover {
       filter: brightness(1.2);
-      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     }
     
     /* Bunte Action Buttons */
     .btn-upload {
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
       border-radius: 12px;
       transition: all 0.2s ease;
       border: none;
@@ -667,17 +667,17 @@ setTimeout(() => {
     .btn-upload:hover {
       background: linear-gradient(135deg, #059669 0%, #047857 100%);
       transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
     }
     
     .btn-upload:active {
       transform: scale(0.98);
-      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
     
     .btn-download {
       background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
       border-radius: 12px;
       transition: all 0.2s ease;
       border: none;
@@ -686,17 +686,17 @@ setTimeout(() => {
     .btn-download:hover {
       background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
       transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
     }
     
     .btn-download:active {
       transform: scale(0.98);
-      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
     
     .btn-export {
       background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
       border-radius: 12px;
       transition: all 0.2s ease;
       border: none;
@@ -705,17 +705,17 @@ setTimeout(() => {
     .btn-export:hover {
       background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
       transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
     }
     
     .btn-export:active {
       transform: scale(0.98);
-      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
     
     .btn-reset {
       background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
       border-radius: 12px;
       transition: all 0.2s ease;
       border: none;
@@ -724,12 +724,12 @@ setTimeout(() => {
     .btn-reset:hover {
       background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
       transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
     }
     
     .btn-reset:active {
       transform: scale(0.98);
-      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
     
     /* Primary Action Buttons - Indigo/Purple Gradient */
@@ -747,7 +747,7 @@ setTimeout(() => {
     .btn-primary:hover {
       background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
       transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
     }
     
     .btn-primary:active {
@@ -770,7 +770,7 @@ setTimeout(() => {
     .btn-edit:hover {
       background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
       transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
     }
     
     /* Save/Confirm Buttons - Green Gradient */
@@ -788,7 +788,7 @@ setTimeout(() => {
     .btn-save:hover {
       background: linear-gradient(135deg, #059669 0%, #047857 100%);
       transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
     }
     
     /* Delete/Danger Buttons - Red Gradient */
@@ -806,7 +806,7 @@ setTimeout(() => {
     .btn-delete:hover {
       background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
       transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
     }
     
     /* Secondary/Cancel Buttons - Gray */
@@ -824,7 +824,7 @@ setTimeout(() => {
     .btn-secondary:hover {
       background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
       transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(107, 114, 128, 0.35);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
     }
     
     /* Dark Mode - Buttons mit subtileren Schatten */
@@ -1060,7 +1060,7 @@ setTimeout(() => {
     
     body.dark-mode .modal-content{
       background: rgba(45, 45, 65, 0.95);
-      border: 1px solid rgba(102, 126, 234, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       color: var(--text-primary);
     }
 
@@ -1072,7 +1072,7 @@ setTimeout(() => {
     body.dark-mode .modal-content button.bg-gray-300 {
       background: rgba(70, 70, 90, 0.8) !important;
       color: #e0e0e0 !important;
-      border: 1px solid rgba(102, 126, 234, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.10);
     }
     
     body.dark-mode .modal-content button.bg-gray-300:hover {
@@ -1156,7 +1156,7 @@ setTimeout(() => {
     body.dark-mode .modal-input {
       background: rgba(50, 50, 70, 0.8);
       color: #e0e0e0;
-      border-color: rgba(102, 126, 234, 0.4);
+      border-color: rgba(255, 255, 255, 0.14);
     }
 
     body.dark-mode .modal-content label {
@@ -1167,37 +1167,37 @@ setTimeout(() => {
     .bg-indigo-100 {
       background: rgba(99, 102, 241, 0.12) !important;
       border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(99, 102, 241, 0.15);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
       transition: all 0.2s ease;
     }
 
     .bg-indigo-100:hover {
       background: rgba(99, 102, 241, 0.18) !important;
-      box-shadow: 0 3px 8px rgba(99, 102, 241, 0.25);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
       transform: translateY(-1px);
     }
 
     .bg-indigo-100:active {
       transform: translateY(0);
-      box-shadow: 0 1px 3px rgba(99, 102, 241, 0.2);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
 
     .bg-orange-100 {
       background: rgba(249, 115, 22, 0.12) !important;
       border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(249, 115, 22, 0.15);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
       transition: all 0.2s ease;
     }
 
     .bg-orange-100:hover {
       background: rgba(249, 115, 22, 0.18) !important;
-      box-shadow: 0 3px 8px rgba(249, 115, 22, 0.25);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
       transform: translateY(-1px);
     }
 
     .bg-orange-100:active {
       transform: translateY(0);
-      box-shadow: 0 1px 3px rgba(249, 115, 22, 0.2);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
 
     body.dark-mode .bg-indigo-100 {
@@ -1580,7 +1580,7 @@ setTimeout(() => {
     }
     
     .dark-mode-switch:focus {
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.3);
     }
     
     .dark-mode-switch.active {
@@ -1610,7 +1610,7 @@ setTimeout(() => {
     
     body.dark-mode .dark-mode-switch.active {
       background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     }
     
     /* ==========================================
@@ -1632,7 +1632,7 @@ setTimeout(() => {
     
     input[type="checkbox"]:hover {
       border-color: var(--accent-primary);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
     }
     
     input[type="checkbox"]:checked {
@@ -1654,7 +1654,7 @@ setTimeout(() => {
     input[type="checkbox"]:focus {
       outline: none;
       border-color: var(--accent-primary);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.2);
     }
     
     /* Dark Mode */
@@ -1664,7 +1664,7 @@ setTimeout(() => {
     
     body.dark-mode input[type="checkbox"]:checked {
       background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-      box-shadow: 0 2px 8px rgba(129, 140, 248, 0.4);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     }
     
     /* ==========================================
@@ -1715,14 +1715,14 @@ setTimeout(() => {
     
     input[type="color"]:hover {
       border-color: var(--accent-primary);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
       transform: scale(1.05);
     }
     
     input[type="color"]:focus {
       outline: none;
       border-color: var(--accent-primary);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.2);
     }
     
     /* Mobile: Größerer Touchbereich */
@@ -2364,6 +2364,11 @@ body.dark-mode .notification-modal .bg-blue-600{
       border: 1px solid var(--border-light);
       background: var(--bg-primary);
       overflow: hidden;
+      box-shadow: var(--shadow-md);
+    }
+    body.light-mode .wallit-accordion {
+      background: #ffffff !important;
+      border: 1px solid #e5e7eb !important;
     }
     .wallit-accordion > summary {
       list-style: none;
@@ -2375,6 +2380,9 @@ body.dark-mode .notification-modal .bg-blue-600{
       justify-content: space-between;
       gap: 12px;
       color: var(--text-primary);
+    }
+    body.light-mode .wallit-accordion > summary {
+      background: #ffffff !important;
     }
     .wallit-accordion > summary::-webkit-details-marker { display: none; }
     .wallit-accordion__title {
@@ -2437,9 +2445,40 @@ body.dark-mode .notification-modal .bg-blue-600{
   background: rgba(255,255,255,0.02);
 }
 .wallit-accordion__meta{ color: rgba(255,255,255,0.70); }
-body.light-mode .wallit-accordion{ background: rgba(0,0,0,0.03); border-color: rgba(20, 40, 90, 0.18); }
-body.light-mode .wallit-accordion > summary{ background: rgba(0,0,0,0.02); }
-body.light-mode .wallit-accordion__meta{ color: rgba(0,0,0,0.55); }
+.wallit-accordion__title {
+  color: var(--text-primary);
+}
+body.light-mode .wallit-accordion{ 
+  background: #ffffff !important; 
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+body.light-mode .wallit-accordion > summary{ 
+  background: #ffffff !important;
+  border-bottom: 1px solid #e5e7eb;
+}
+body.light-mode .wallit-accordion[open] > summary {
+  border-bottom: 1px solid #e5e7eb;
+}
+body.light-mode .wallit-accordion:not([open]) > summary {
+  border-bottom: none;
+}
+body.light-mode .wallit-accordion__title {
+  color: #111827 !important;
+}
+body.light-mode .wallit-accordion__meta{ 
+  color: #9ca3af !important;
+}
+body.light-mode .wallit-accordion__body {
+  background: #ffffff !important;
+  border-top: none !important;
+  padding: 16px 18px;
+}
+body.light-mode .wallit-accordion-item {
+  background: #ffffff !important;
+  border: none !important;
+  padding: 14px;
+}
 
 /* Chevron folgt den Icon-Farben: Dark=#fff, Light=#000 */
 .wallit-accordion__chev{
@@ -2447,7 +2486,7 @@ body.light-mode .wallit-accordion__meta{ color: rgba(0,0,0,0.55); }
   opacity: 1;
 }
 body.light-mode .wallit-accordion__chev{
-  color: #000000;
+  color: #111827;
 }
 
 
@@ -2622,6 +2661,128 @@ body:not(.dark-mode) .wallit-accordion__chev { color: #111827 !important; }
   }
 }
 
+
+/* ===== Year Tab Accordions: Card-Look + WHITE Lightmode ===== */
+.year-tab details.wallit-accordion{
+  background-color: var(--bg-primary);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+
+/* Body inherits card background */
+.year-tab .wallit-accordion__body{
+  background-color: transparent;
+}
+
+/* 🔒 Hard guarantee: Lightmode really white */
+html:not(.dark) .year-tab details.wallit-accordion,
+html:not(.dark) .year-tab details.wallit-accordion > summary,
+html:not(.dark) .year-tab details.wallit-accordion .wallit-accordion__body{
+  background-color: #ffffff !important;
+}
+
+/* Lightmode text & chevron contrast */
+html:not(.dark) .year-tab details.wallit-accordion > summary{
+  color: #0f172a;
+}
+html:not(.dark) .year-tab details.wallit-accordion .wallit-accordion__chev{
+  color: #0f172a;
+}
+
+
+/* === FIX: Accordions in LIGHT mode must be WHITE + keep shadow (global, not depending on .year-tab) === */
+body:not(.dark-mode) details.wallit-accordion{
+  background:#ffffff !important;
+  border:1px solid rgba(15,23,42,.10) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+body:not(.dark-mode) details.wallit-accordion > summary,
+body:not(.dark-mode) details.wallit-accordion .accordion-summary{
+  background:#ffffff !important;
+  color: var(--text-primary) !important;
+}
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body{
+  background:#ffffff !important;
+}
+
+/* Chevron contrast */
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__chev,
+body:not(.dark-mode) details.wallit-accordion summary svg{
+  color: #0f172a !important;
+}
+
+/* Remove tinted inner wrappers inside accordion bodies (charts) */
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body > div,
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body .bg-gray-50,
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body .bg-slate-50,
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body .bg-white{
+  background: transparent !important;
+}
+
+
+/* === Darkmode: restore accordion shadow (matches card elevation) === */
+body.dark-mode details.wallit-accordion{
+  box-shadow: var(--shadow-md) !important;
+  border-color: rgba(255,255,255,.10) !important;
+}
+body.dark-mode details.wallit-accordion > summary{
+  /* keep header crisp */
+  background: transparent;
+}
+
+
+
+
+/* ===== Unified shadows (Cards + Accordions) — NO GLOW (tight drop shadow) ===== */
+:root{
+  --shadow-card: 0 6px 14px rgba(0,0,0,.10);
+  --shadow-card-hover: 0 8px 18px rgba(0,0,0,.12);
+}
+body.dark-mode{
+  /* tighter + darker, reduces "halo" on dark backgrounds */
+  --shadow-card: 0 8px 16px rgba(0,0,0,.70);
+  --shadow-card-hover: 0 10px 18px rgba(0,0,0,.78);
+}
+
+/* Apply same elevation to accordions */
+details.wallit-accordion{
+  box-shadow: var(--shadow-card) !important;
+}
+details.wallit-accordion:hover{
+  box-shadow: var(--shadow-card-hover) !important;
+}
+
+/* Keep borders subtle and consistent */
+body.dark-mode details.wallit-accordion{
+  border-color: rgba(255,255,255,.08) !important;
+}
+
+/* Prevent any glow-like effects from filters */
+details.wallit-accordion,
+.card, .panel-card, .kpi-card, .month-card, .stat-card, .section-card{
+  filter: none !important;
+}
+
+
+/* Apply unified shadow to common card surfaces (non-invasive) */
+.card, .panel-card, .kpi-card, .month-card, .stat-card, .section-card{
+  box-shadow: var(--shadow-card) !important;
+}
+.card:hover, .panel-card:hover, .kpi-card:hover, .month-card:hover, .stat-card:hover, .section-card:hover{
+  box-shadow: var(--shadow-card-hover) !important;
+}
+
+/* Dark mode: replace glow with real shadow */
+.dark .card,
+.dark .section,
+.dark [data-card],
+.dark .rounded-xl {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.5) !important;
+}
+
 </style>
 
 <style>
@@ -2761,6 +2922,124 @@ body.dark-mode .secondary-btn{
   display: none !important;
 }
 
+
+/* ===== Year Tab Accordions: Card-Look + WHITE Lightmode ===== */
+.year-tab details.wallit-accordion{
+  background-color: var(--bg-primary);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+
+/* Body inherits card background */
+.year-tab .wallit-accordion__body{
+  background-color: transparent;
+}
+
+/* 🔒 Hard guarantee: Lightmode really white */
+html:not(.dark) .year-tab details.wallit-accordion,
+html:not(.dark) .year-tab details.wallit-accordion > summary,
+html:not(.dark) .year-tab details.wallit-accordion .wallit-accordion__body{
+  background-color: #ffffff !important;
+}
+
+/* Lightmode text & chevron contrast */
+html:not(.dark) .year-tab details.wallit-accordion > summary{
+  color: #0f172a;
+}
+html:not(.dark) .year-tab details.wallit-accordion .wallit-accordion__chev{
+  color: #0f172a;
+}
+
+
+/* === FIX: Accordions in LIGHT mode must be WHITE + keep shadow (global, not depending on .year-tab) === */
+body:not(.dark-mode) details.wallit-accordion{
+  background:#ffffff !important;
+  border:1px solid rgba(15,23,42,.10) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+body:not(.dark-mode) details.wallit-accordion > summary,
+body:not(.dark-mode) details.wallit-accordion .accordion-summary{
+  background:#ffffff !important;
+  color: var(--text-primary) !important;
+}
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body{
+  background:#ffffff !important;
+}
+
+/* Chevron contrast */
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__chev,
+body:not(.dark-mode) details.wallit-accordion summary svg{
+  color: #0f172a !important;
+}
+
+/* Remove tinted inner wrappers inside accordion bodies (charts) */
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body > div,
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body .bg-gray-50,
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body .bg-slate-50,
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body .bg-white{
+  background: transparent !important;
+}
+
+
+/* === Darkmode: restore accordion shadow (matches card elevation) === */
+body.dark-mode details.wallit-accordion{
+  box-shadow: var(--shadow-md) !important;
+  border-color: rgba(255,255,255,.10) !important;
+}
+body.dark-mode details.wallit-accordion > summary{
+  /* keep header crisp */
+  background: transparent;
+}
+
+
+/* ===== Unified shadows (Cards + Accordions) ===== */
+:root{
+  --shadow-card: 0 6px 18px rgba(0,0,0,.08);
+  --shadow-card-hover: 0 10px 26px rgba(0,0,0,.10);
+}
+body.dark-mode{
+  --shadow-card: 0 10px 28px rgba(0,0,0,.55);
+  --shadow-card-hover: 0 14px 34px rgba(0,0,0,.62);
+}
+
+/* Apply same elevation to accordions */
+details.wallit-accordion{
+  box-shadow: var(--shadow-card) !important;
+}
+details.wallit-accordion:hover{
+  box-shadow: var(--shadow-card-hover) !important;
+}
+
+/* Keep borders subtle and consistent */
+body.dark-mode details.wallit-accordion{
+  border-color: rgba(255,255,255,.08) !important;
+}
+
+/* Ensure we don't accidentally create a glow via spread/colored shadows from older rules */
+details.wallit-accordion{
+  filter: none !important;
+}
+
+/* Apply unified shadow to common card surfaces (non-invasive: only if they already have shadows) */
+.card, .panel-card, .kpi-card, .month-card, .stat-card, .section-card{
+  box-shadow: var(--shadow-card);
+}
+.card:hover, .panel-card:hover, .kpi-card:hover, .month-card:hover, .stat-card:hover, .section-card:hover{
+  box-shadow: var(--shadow-card-hover);
+}
+
+
+/* Dark mode: replace glow with real shadow */
+.dark .card,
+.dark .section,
+.dark [data-card],
+.dark .rounded-xl {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.5) !important;
+}
+
 </style>
 
 
@@ -2840,7 +3119,7 @@ body.dark-mode #receiptScannerModal .rs-pill{
  border-radius: 14px;
  padding: 14px 16px;
  font-weight: 700;
- box-shadow: 0 10px 24px rgba(2,6,23,.10);
+ box-shadow: 0 10px 24px rgba(0, 0, 0, .10);
  min-height: 54px;
 }
 .secondary-btn:active{
@@ -2864,7 +3143,7 @@ body.dark-mode #receiptScannerModal
  border-radius: 14px;
  padding: 14px 16px;
  font-weight: 700;
- box-shadow: 0 10px 24px rgba(2,6,23,.10);
+ box-shadow: 0 10px 24px rgba(0, 0, 0, .10);
  min-height: 54px;
 }
 .secondary-btn:active{
@@ -2996,6 +3275,124 @@ body.dark-mode .secondary-btn{
   display: none !important;
 }
 
+
+/* ===== Year Tab Accordions: Card-Look + WHITE Lightmode ===== */
+.year-tab details.wallit-accordion{
+  background-color: var(--bg-primary);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+
+/* Body inherits card background */
+.year-tab .wallit-accordion__body{
+  background-color: transparent;
+}
+
+/* 🔒 Hard guarantee: Lightmode really white */
+html:not(.dark) .year-tab details.wallit-accordion,
+html:not(.dark) .year-tab details.wallit-accordion > summary,
+html:not(.dark) .year-tab details.wallit-accordion .wallit-accordion__body{
+  background-color: #ffffff !important;
+}
+
+/* Lightmode text & chevron contrast */
+html:not(.dark) .year-tab details.wallit-accordion > summary{
+  color: #0f172a;
+}
+html:not(.dark) .year-tab details.wallit-accordion .wallit-accordion__chev{
+  color: #0f172a;
+}
+
+
+/* === FIX: Accordions in LIGHT mode must be WHITE + keep shadow (global, not depending on .year-tab) === */
+body:not(.dark-mode) details.wallit-accordion{
+  background:#ffffff !important;
+  border:1px solid rgba(15,23,42,.10) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+body:not(.dark-mode) details.wallit-accordion > summary,
+body:not(.dark-mode) details.wallit-accordion .accordion-summary{
+  background:#ffffff !important;
+  color: var(--text-primary) !important;
+}
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body{
+  background:#ffffff !important;
+}
+
+/* Chevron contrast */
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__chev,
+body:not(.dark-mode) details.wallit-accordion summary svg{
+  color: #0f172a !important;
+}
+
+/* Remove tinted inner wrappers inside accordion bodies (charts) */
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body > div,
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body .bg-gray-50,
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body .bg-slate-50,
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body .bg-white{
+  background: transparent !important;
+}
+
+
+/* === Darkmode: restore accordion shadow (matches card elevation) === */
+body.dark-mode details.wallit-accordion{
+  box-shadow: var(--shadow-md) !important;
+  border-color: rgba(255,255,255,.10) !important;
+}
+body.dark-mode details.wallit-accordion > summary{
+  /* keep header crisp */
+  background: transparent;
+}
+
+
+/* ===== Unified shadows (Cards + Accordions) ===== */
+:root{
+  --shadow-card: 0 6px 18px rgba(0,0,0,.08);
+  --shadow-card-hover: 0 10px 26px rgba(0,0,0,.10);
+}
+body.dark-mode{
+  --shadow-card: 0 10px 28px rgba(0,0,0,.55);
+  --shadow-card-hover: 0 14px 34px rgba(0,0,0,.62);
+}
+
+/* Apply same elevation to accordions */
+details.wallit-accordion{
+  box-shadow: var(--shadow-card) !important;
+}
+details.wallit-accordion:hover{
+  box-shadow: var(--shadow-card-hover) !important;
+}
+
+/* Keep borders subtle and consistent */
+body.dark-mode details.wallit-accordion{
+  border-color: rgba(255,255,255,.08) !important;
+}
+
+/* Ensure we don't accidentally create a glow via spread/colored shadows from older rules */
+details.wallit-accordion{
+  filter: none !important;
+}
+
+/* Apply unified shadow to common card surfaces (non-invasive: only if they already have shadows) */
+.card, .panel-card, .kpi-card, .month-card, .stat-card, .section-card{
+  box-shadow: var(--shadow-card);
+}
+.card:hover, .panel-card:hover, .kpi-card:hover, .month-card:hover, .stat-card:hover, .section-card:hover{
+  box-shadow: var(--shadow-card-hover);
+}
+
+
+/* Dark mode: replace glow with real shadow */
+.dark .card,
+.dark .section,
+.dark [data-card],
+.dark .rounded-xl {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.5) !important;
+}
+
 </style>
 
 <style>
@@ -3116,6 +3513,124 @@ button[style*="display:none"]{ display:none !important; }
 .expenses-accordion-content::-webkit-scrollbar,
 .expenses-list::-webkit-scrollbar {
   display: none !important;
+}
+
+
+/* ===== Year Tab Accordions: Card-Look + WHITE Lightmode ===== */
+.year-tab details.wallit-accordion{
+  background-color: var(--bg-primary);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+
+/* Body inherits card background */
+.year-tab .wallit-accordion__body{
+  background-color: transparent;
+}
+
+/* 🔒 Hard guarantee: Lightmode really white */
+html:not(.dark) .year-tab details.wallit-accordion,
+html:not(.dark) .year-tab details.wallit-accordion > summary,
+html:not(.dark) .year-tab details.wallit-accordion .wallit-accordion__body{
+  background-color: #ffffff !important;
+}
+
+/* Lightmode text & chevron contrast */
+html:not(.dark) .year-tab details.wallit-accordion > summary{
+  color: #0f172a;
+}
+html:not(.dark) .year-tab details.wallit-accordion .wallit-accordion__chev{
+  color: #0f172a;
+}
+
+
+/* === FIX: Accordions in LIGHT mode must be WHITE + keep shadow (global, not depending on .year-tab) === */
+body:not(.dark-mode) details.wallit-accordion{
+  background:#ffffff !important;
+  border:1px solid rgba(15,23,42,.10) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+body:not(.dark-mode) details.wallit-accordion > summary,
+body:not(.dark-mode) details.wallit-accordion .accordion-summary{
+  background:#ffffff !important;
+  color: var(--text-primary) !important;
+}
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body{
+  background:#ffffff !important;
+}
+
+/* Chevron contrast */
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__chev,
+body:not(.dark-mode) details.wallit-accordion summary svg{
+  color: #0f172a !important;
+}
+
+/* Remove tinted inner wrappers inside accordion bodies (charts) */
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body > div,
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body .bg-gray-50,
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body .bg-slate-50,
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body .bg-white{
+  background: transparent !important;
+}
+
+
+/* === Darkmode: restore accordion shadow (matches card elevation) === */
+body.dark-mode details.wallit-accordion{
+  box-shadow: var(--shadow-md) !important;
+  border-color: rgba(255,255,255,.10) !important;
+}
+body.dark-mode details.wallit-accordion > summary{
+  /* keep header crisp */
+  background: transparent;
+}
+
+
+/* ===== Unified shadows (Cards + Accordions) ===== */
+:root{
+  --shadow-card: 0 6px 18px rgba(0,0,0,.08);
+  --shadow-card-hover: 0 10px 26px rgba(0,0,0,.10);
+}
+body.dark-mode{
+  --shadow-card: 0 10px 28px rgba(0,0,0,.55);
+  --shadow-card-hover: 0 14px 34px rgba(0,0,0,.62);
+}
+
+/* Apply same elevation to accordions */
+details.wallit-accordion{
+  box-shadow: var(--shadow-card) !important;
+}
+details.wallit-accordion:hover{
+  box-shadow: var(--shadow-card-hover) !important;
+}
+
+/* Keep borders subtle and consistent */
+body.dark-mode details.wallit-accordion{
+  border-color: rgba(255,255,255,.08) !important;
+}
+
+/* Ensure we don't accidentally create a glow via spread/colored shadows from older rules */
+details.wallit-accordion{
+  filter: none !important;
+}
+
+/* Apply unified shadow to common card surfaces (non-invasive: only if they already have shadows) */
+.card, .panel-card, .kpi-card, .month-card, .stat-card, .section-card{
+  box-shadow: var(--shadow-card);
+}
+.card:hover, .panel-card:hover, .kpi-card:hover, .month-card:hover, .stat-card:hover, .section-card:hover{
+  box-shadow: var(--shadow-card-hover);
+}
+
+
+/* Dark mode: replace glow with real shadow */
+.dark .card,
+.dark .section,
+.dark [data-card],
+.dark .rounded-xl {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.5) !important;
 }
 
 </style>
@@ -3256,6 +3771,124 @@ button[style*="display:none"]{ display:none !important; }
 .expenses-accordion-content::-webkit-scrollbar,
 .expenses-list::-webkit-scrollbar {
   display: none !important;
+}
+
+
+/* ===== Year Tab Accordions: Card-Look + WHITE Lightmode ===== */
+.year-tab details.wallit-accordion{
+  background-color: var(--bg-primary);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+
+/* Body inherits card background */
+.year-tab .wallit-accordion__body{
+  background-color: transparent;
+}
+
+/* 🔒 Hard guarantee: Lightmode really white */
+html:not(.dark) .year-tab details.wallit-accordion,
+html:not(.dark) .year-tab details.wallit-accordion > summary,
+html:not(.dark) .year-tab details.wallit-accordion .wallit-accordion__body{
+  background-color: #ffffff !important;
+}
+
+/* Lightmode text & chevron contrast */
+html:not(.dark) .year-tab details.wallit-accordion > summary{
+  color: #0f172a;
+}
+html:not(.dark) .year-tab details.wallit-accordion .wallit-accordion__chev{
+  color: #0f172a;
+}
+
+
+/* === FIX: Accordions in LIGHT mode must be WHITE + keep shadow (global, not depending on .year-tab) === */
+body:not(.dark-mode) details.wallit-accordion{
+  background:#ffffff !important;
+  border:1px solid rgba(15,23,42,.10) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+body:not(.dark-mode) details.wallit-accordion > summary,
+body:not(.dark-mode) details.wallit-accordion .accordion-summary{
+  background:#ffffff !important;
+  color: var(--text-primary) !important;
+}
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body{
+  background:#ffffff !important;
+}
+
+/* Chevron contrast */
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__chev,
+body:not(.dark-mode) details.wallit-accordion summary svg{
+  color: #0f172a !important;
+}
+
+/* Remove tinted inner wrappers inside accordion bodies (charts) */
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body > div,
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body .bg-gray-50,
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body .bg-slate-50,
+body:not(.dark-mode) details.wallit-accordion .wallit-accordion__body .bg-white{
+  background: transparent !important;
+}
+
+
+/* === Darkmode: restore accordion shadow (matches card elevation) === */
+body.dark-mode details.wallit-accordion{
+  box-shadow: var(--shadow-md) !important;
+  border-color: rgba(255,255,255,.10) !important;
+}
+body.dark-mode details.wallit-accordion > summary{
+  /* keep header crisp */
+  background: transparent;
+}
+
+
+/* ===== Unified shadows (Cards + Accordions) ===== */
+:root{
+  --shadow-card: 0 6px 18px rgba(0,0,0,.08);
+  --shadow-card-hover: 0 10px 26px rgba(0,0,0,.10);
+}
+body.dark-mode{
+  --shadow-card: 0 10px 28px rgba(0,0,0,.55);
+  --shadow-card-hover: 0 14px 34px rgba(0,0,0,.62);
+}
+
+/* Apply same elevation to accordions */
+details.wallit-accordion{
+  box-shadow: var(--shadow-card) !important;
+}
+details.wallit-accordion:hover{
+  box-shadow: var(--shadow-card-hover) !important;
+}
+
+/* Keep borders subtle and consistent */
+body.dark-mode details.wallit-accordion{
+  border-color: rgba(255,255,255,.08) !important;
+}
+
+/* Ensure we don't accidentally create a glow via spread/colored shadows from older rules */
+details.wallit-accordion{
+  filter: none !important;
+}
+
+/* Apply unified shadow to common card surfaces (non-invasive: only if they already have shadows) */
+.card, .panel-card, .kpi-card, .month-card, .stat-card, .section-card{
+  box-shadow: var(--shadow-card);
+}
+.card:hover, .panel-card:hover, .kpi-card:hover, .month-card:hover, .stat-card:hover, .section-card:hover{
+  box-shadow: var(--shadow-card-hover);
+}
+
+
+/* Dark mode: replace glow with real shadow */
+.dark .card,
+.dark .section,
+.dark [data-card],
+.dark .rounded-xl {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.5) !important;
 }
 
 </style>
@@ -5320,6 +5953,22 @@ migrateData(fromVersion, toVersion) {
         });
       }
 
+      // 🔒 Pflichtfelder-Hinweis (einheitliches Modal bei allen „Hinzufügen“-Aktionen)
+      showRequiredFieldsModal() {
+        this.showModal(
+          'Pflichtfelder',
+          'Bitte alle Pflichtfelder ausfüllen',
+          [
+            {
+              text: 'OK',
+              class: 'from-indigo-600 to-purple-600',
+              callback: () => this.closeModal()
+            }
+          ]
+        );
+      }
+
+
 
       // ♿ MODAL ACCESSIBILITY (ESC, Fokus-Falle, ARIA)
       initModalObserver() {
@@ -6769,7 +7418,7 @@ getGesamtKreditlast() {
         const benutzer = document.getElementById('kreditBenutzer').value;
         
         if (!name || !betrag || !laufzeit || !rate || !startdatum) {
-          this.showNotification('Bitte alle Pflichtfelder ausfüllen', 'error');
+          this.showRequiredFieldsModal();
           return;
         }
         
@@ -6995,7 +7644,7 @@ getGesamtKreditlast() {
                 </select>
               </div>
               <div class="flex flex-col sm:flex-row gap-3 mt-6">
-                <button onclick="app.saveVorlageEdit(${id}, '${vorlage.name}', ${vorlage.betrag}, '${vorlage.kategorie}')" class="flex-1 px-4 py-3 text-white rounded-lg font-semibold hover:shadow-lg transition-all" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
+                <button onclick="app.saveVorlageEdit(${id}, '${vorlage.name}', ${vorlage.betrag}, '${vorlage.kategorie}')" class="flex-1 px-4 py-3 text-white rounded-lg font-semibold hover:shadow-lg transition-all" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);">
                   Speichern
                 </button>
                 <button onclick="this.closest('.modal-overlay').remove()" class="flex-1 px-4 py-3 bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400 transition-all">
@@ -7586,7 +8235,7 @@ getGesamtKreditlast() {
         }
         
         if (newTeilnehmer.length === 0) {
-          this.showNotification('❌ Bitte mindestens einen Teilnehmer auswählen!', 'error');
+          this.showRequiredFieldsModal();
           return;
         }
         
@@ -8686,6 +9335,37 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
         this.charts[key] = new Chart(canvas, config);
       }
 
+
+      renderCategoryLegend(containerId, chart) {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        if (!chart || !chart.data || !chart.data.labels || !chart.data.datasets?.length) {
+          el.innerHTML = '';
+          return;
+        }
+
+        const labels = chart.data.labels || [];
+        const values = (chart.data.datasets[0].data || []).map(v => (parseFloat(v) || 0));
+        const colors = chart.data.datasets[0].backgroundColor || [];
+
+        // Sort by value desc (keeps UI stable & readable)
+        const items = labels.map((label, i) => ({
+          label,
+          value: values[i] ?? 0,
+          color: Array.isArray(colors) ? (colors[i] || '#94a3b8') : colors
+        })).sort((a, b) => (b.value || 0) - (a.value || 0));
+
+        el.innerHTML = items.map(it => `
+          <div class="flex items-center justify-between gap-3 p-2 rounded-lg border border-white/10 bg-white/5">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-3.5 h-3.5 rounded-sm shrink-0" style="background:${it.color}; border:1px solid rgba(255,255,255,0.35)"></span>
+              <span class="text-sm text-white/80 truncate">${this.escapeHtml(String(it.label))}</span>
+            </div>
+            <span class="text-sm font-semibold text-white/90 whitespace-nowrap">${this.formatCurrency(it.value)}</span>
+          </div>
+        `).join('');
+      }
+
       createYearlyCharts() {
         // Lazy-load Chart.js when charts are needed
         if (typeof Chart === "undefined") {
@@ -8788,14 +9468,15 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
               responsive: true,
               maintainAspectRatio: false,
               plugins: {
-                legend: {
-                  position: 'right'
-                }
+                legend: { display: false }
               }
             }
           });
+          const catChart = this.charts?.category;
+          this.renderCategoryLegend('categoryLegend', catChart);
         }
         
+
         // Neue Geldfluss-Chart mit allen Ausgaben
         const cashflowCanvas = document.getElementById('cashflowChart');
         if (cashflowCanvas) {
@@ -8880,9 +9561,7 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
               responsive: true,
               maintainAspectRatio: false,
               plugins: {
-                legend: {
-                  position: 'right'
-                }
+                legend: { display: false }
               }
             }
           });
@@ -9665,18 +10344,25 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
             </div>
             <details class="wallit-accordion mt-4" id="monthAusgabenAccordion">
               <summary>
-                <div class="flex items-center gap-3 min-w-0">
-                  <div class="wallit-accordion__title">Ausgaben-Details</div>
-                  <div class="wallit-accordion__meta">
-                    <span>${ausgaben.length} Einträge</span>
-                    <span>•</span>
-                    <span>${this.formatCurrency(ausgabenSum)}</span>
+                  <div class="min-w-0 flex flex-col">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="wallit-accordion__title">Ausgaben-Details</div>
+                      <div class="wallit-accordion__meta hidden sm:inline-flex">
+                        <span>${ausgaben.length} Einträge</span>
+                        <span>•</span>
+                        <span>${this.formatCurrency(ausgabenSum)}</span>
+                      </div>
+                    </div>
+                    <div class="wallit-accordion__meta mt-1 sm:hidden">
+                      <span>${ausgaben.length} Einträge</span>
+                      <span>•</span>
+                      <span>${this.formatCurrency(ausgabenSum)}</span>
+                    </div>
                   </div>
-                </div>
-                <svg class="wallit-accordion__chev" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </summary>
+                  <svg class="wallit-accordion__chev" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </summary>
               <div class="wallit-accordion__body">
                 <div class="space-y-3 month-ausgaben-list">
 
@@ -10125,7 +10811,12 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
               </summary>
               <div class="wallit-accordion__body">
                 <div class="wallit-accordion-item">
-                  <canvas id="categoryChart" height="160"></canvas>
+                  <div class="flex flex-col sm:flex-row gap-4 sm:items-start items-center">
+                    <div class="w-full sm:w-[340px] max-w-[380px]">
+                      <canvas id="categoryChart" height="180"></canvas>
+                    </div>
+                    <div id="categoryLegend" class="w-full sm:flex-1 space-y-2"></div>
+                  </div>
                 </div>
               </div>
             </details>
@@ -10397,12 +11088,12 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
         const teilnehmer = Array.from(checkboxes).map(cb => cb.value);
         
         if (!name || !typ) {
-          this.showNotification('❌ Bitte Name und Typ eingeben!', 'error');
+          this.showRequiredFieldsModal();
           return;
         }
         
         if (teilnehmer.length === 0) {
-          this.showNotification('❌ Bitte mindestens einen Teilnehmer auswählen!', 'error');
+          this.showRequiredFieldsModal();
           return;
         }
         
@@ -10547,6 +11238,9 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
           this.addSparrate(kontoId, betrag, intervall, null, benutzer);
           document.getElementById(`sparrate_${kontoId}`).value = '';
         }
+        else {
+          this.showRequiredFieldsModal();
+        }
       }
 
       addBewegungFromForm(kontoId, typ) {
@@ -10567,13 +11261,16 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
         const kategorie = document.getElementById('fixKat').value;
         const intervall = document.getElementById('fixIntervall')?.value || 'monatlich';
         const benutzer = document.getElementById('fixBenutzer')?.value || 'gemeinsam';
-        
+
         if (name && betrag) {
           this.addFixkosten(name, betrag, kategorie, benutzer, intervall);
           document.getElementById('fixName').value = '';
           document.getElementById('fixBetrag').value = '';
+        } else {
+          this.showRequiredFieldsModal();
         }
       }
+
 
       addAusgabeFromForm() {
         const datum = document.getElementById('ausgDatum').value;
@@ -10581,41 +11278,59 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
         const betrag = parseAmount(document.getElementById('ausgBetrag').value);
         const kategorie = document.getElementById('ausgKat').value;
         const benutzer = document.getElementById('ausgBenutzer')?.value || this.aktiverBenutzer;
-        
+
         if (datum && name && betrag) {
           this.addAusgabe(datum, name, betrag, kategorie, benutzer);
           document.getElementById('ausgDatum').value = this.getTodayDateString();
           document.getElementById('ausgName').value = '';
           document.getElementById('ausgBetrag').value = '';
+        } else {
+          this.showRequiredFieldsModal();
         }
       }
+
 
       addZusatzeinkommenFromForm() {
         const datum = document.getElementById('zusatzDatum').value;
         const name = sanitizeText(document.getElementById('zusatzName').value, 120);
         const betrag = parseAmount(document.getElementById('zusatzBetrag').value);
-        
+
         if (datum && name && betrag) {
           this.addZusatzeinkommen(datum, name, betrag);
           document.getElementById('zusatzDatum').value = this.getTodayDateString();
           document.getElementById('zusatzName').value = '';
           document.getElementById('zusatzBetrag').value = '';
+        } else {
+          this.showRequiredFieldsModal();
         }
       }
+
 
       addVorlageFromForm() {
         const name = sanitizeText(document.getElementById('vorlName').value, 120);
         const betrag = parseAmount(document.getElementById('vorlBetrag').value);
         const kategorie = document.getElementById('vorlKat').value;
-        
         if (name && betrag) {
           this.addVorlage(name, betrag, kategorie);
           document.getElementById('vorlName').value = '';
           document.getElementById('vorlBetrag').value = '';
+        } else {
+          this.showRequiredFieldsModal();
         }
       }
 
       renderStammdatenView() {
+        const toMonthlyFix = (betrag, intervall) => {
+          switch (intervall) {
+            case 'vierteljährlich': return betrag / 3;
+            case 'halbjährlich': return betrag / 6;
+            case 'jährlich': return betrag / 12;
+            default: return betrag; // monatlich
+          }
+        };
+        const fixkostenCount = (this.fixkosten || []).length;
+        const fixkostenSumMonthly = (this.fixkosten || []).reduce((sum, f) => sum + toMonthlyFix((parseFloat(f.betrag) || 0), (f.intervall || 'monatlich')), 0);
+
         return `
           <div>
             <h2 class="flex items-center gap-2 text-3xl font-bold text-[color:var(--text-primary)] mb-6">${icons.settings} <span>Stammdaten & Einstellungen</span></h2>
@@ -10751,8 +11466,31 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
                   </button>
                 </div>
               </div>
-              <div class="space-y-3">
-                ${this.fixkosten.map(f => `
+              <details class="wallit-accordion mt-4" id="stammFixkostenAccordion">
+                <summary>
+                  <div class="min-w-0 flex flex-col">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="wallit-accordion__title">Fixkosten-Details</div>
+                      <div class="wallit-accordion__meta hidden sm:inline-flex">
+                        <span>${fixkostenCount} Einträge</span>
+                        <span>•</span>
+                        <span>${this.formatCurrency(fixkostenSumMonthly)}</span>
+                        <span class="hidden sm:inline">/ Monat</span>
+                      </div>
+                    </div>
+                    <div class="wallit-accordion__meta mt-1 sm:hidden">
+                      <span>${fixkostenCount} Einträge</span>
+                      <span>•</span>
+                      <span>${this.formatCurrency(fixkostenSumMonthly)}</span>
+                    </div>
+                  </div>
+                  <svg class="wallit-accordion__chev" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </summary>
+                <div class="wallit-accordion__body">
+                  <div class="space-y-3">
+                    ${this.fixkosten.map(f => `
                   <!-- Mobile: Card Layout / Desktop: Horizontal -->
                   <div class="bg-gray-50 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
                     <!-- Desktop Layout (>= 768px) -->
@@ -10825,7 +11563,9 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
                     </div>
                   </div>
                 `).join('')}
-              </div>
+                  </div>
+                </div>
+              </details>
             </div>
 
             <!-- Kredite -->
@@ -10882,7 +11622,7 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
                       </svg>
                     </button>
                   </div>
-                  <div class="sm:col-span-2"></div>
+                  <div class="hidden sm:block sm:col-span-2"></div>
                 </div>
                 <!-- Zeile 4: Kategorie, Benutzer, Button -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -11127,7 +11867,7 @@ window.app = new FinanceManagerCloud();
   
   <!-- Floating Action Button for Quick Cloud Upload (Mobile Only) -->
   <div id="fabUpload" onclick="app.performSync()" title="In Cloud hochladen" style="position: fixed; top: 16px; right: 16px; width: 56px; height: 56px; cursor: pointer; display: none; z-index: 9999;">
-    <svg width="56" height="56" viewBox="0 0 56 56" style="filter: drop-shadow(0 4px 12px rgba(16, 185, 129, 0.4));">
+    <svg width="56" height="56" viewBox="0 0 56 56" style="filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));">
       <circle cx="28" cy="28" r="28" fill="#10b981"/>
       <g transform="translate(16, 16)">
         <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"
