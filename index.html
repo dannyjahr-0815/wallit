@@ -3565,7 +3565,7 @@ migrateData(fromVersion, toVersion) {
                     dlog(`✅ ${key} gespeichert (queued)`);
 
                     // 🚀 PERFORMANCE: Cache invalidieren wenn Daten sich ändern
-                    if (key === 'ausgabenAll' || key === 'einkommenAll' || key === 'fixkosten' || key === 'zusatzeinkommenAll') {
+                    if (key === 'ausgabenAll' || key === 'einkommenAll' || key === 'fixkosten' || key === 'zusatzeinkommenAll' || key === 'kredite') {
                         this.invalidateCache();
                     }
                     
@@ -3930,7 +3930,7 @@ migrateData(fromVersion, toVersion) {
     let kredSum = 0;
     if (Array.isArray(this.kredite)) {
         this.kredite.forEach(k => {
-            kredSum += (k.id || 0) + (k.betrag || 0) + (k.rate || 0);
+            kredSum += (k.id || 0) + Math.round((k.betrag || 0) * 100) + Math.round((k.rate || 0) * 100);
         });
     }
 
@@ -3938,7 +3938,7 @@ migrateData(fromVersion, toVersion) {
     const ausKeys = countObj(monthsAusgaben);
     const einKeys = countObj(monthsEinkommen);
 
-    return `v4|fix:${fix}|sk:${sk}|sr:${sr}|kred:${kred}|kredSum:${kredSum.toFixed(2)}|ausM:${ausKeys}|einM:${einKeys}|ausI:${ausgabenItems}|einI:${einkommenItems}`;
+    return `v4|fix:${fix}|sk:${sk}|sr:${sr}|kred:${kred}|kredSum:${kredSum}|ausM:${ausKeys}|einM:${einKeys}|ausI:${ausgabenItems}|einI:${einkommenItems}`;
 }
 
             
@@ -3964,14 +3964,14 @@ migrateData(fromVersion, toVersion) {
     let kredSum = 0;
     if (cloudData && Array.isArray(cloudData.kredite)) {
         cloudData.kredite.forEach(k => {
-            kredSum += (k.id || 0) + (k.betrag || 0) + (k.rate || 0);
+            kredSum += (k.id || 0) + Math.round((k.betrag || 0) * 100) + Math.round((k.rate || 0) * 100);
         });
     }
 
     const ausKeys = countObj(monthsAusgaben);
     const einKeys = countObj(monthsEinkommen);
 
-    return `v4|fix:${fix}|sk:${sk}|sr:${sr}|kred:${kred}|kredSum:${kredSum.toFixed(2)}|ausM:${ausKeys}|einM:${einKeys}|ausI:${ausgabenItems}|einI:${einkommenItems}`;
+    return `v4|fix:${fix}|sk:${sk}|sr:${sr}|kred:${kred}|kredSum:${kredSum}|ausM:${ausKeys}|einM:${einKeys}|ausI:${ausgabenItems}|einI:${einkommenItems}`;
 }
 
             
@@ -4116,6 +4116,14 @@ migrateData(fromVersion, toVersion) {
             handleCloudUpdate(cloudData) {
                 // Prüfe ob Daten wirklich unterschiedlich sind
                 const dataChanged = this.compareData(cloudData);
+                
+                // Debug: Zeige beide Hashes
+                const localHash = this.createDataHash();
+                const cloudHash = this.createCloudDataHash(cloudData);
+                dlog('🔍 Hash-Vergleich:');
+                dlog('   Lokal:', localHash);
+                dlog('   Cloud:', cloudHash);
+                dlog('   Unterschiedlich?', dataChanged);
                 
                 if (!dataChanged) {
                     // Daten sind identisch - nur Timestamp aktualisieren, keine Notification
@@ -5714,6 +5722,7 @@ migrateData(fromVersion, toVersion) {
                     gesamtbetrag: gesamtbetrag ? parseFloat(gesamtbetrag) : null
                 });
                 this.saveData('kredite', this.kredite);
+                this.markAsChanged();
                 this.invalidateCache();
                 this.render();
             }
@@ -5896,6 +5905,7 @@ migrateData(fromVersion, toVersion) {
                 kredit.gesamtbetrag = gesamtbetrag ? parseFloat(gesamtbetrag) : null;
                 
                 this.saveData('kredite', this.kredite);
+                this.markAsChanged();
                 this.invalidateCache();
                 document.querySelector('.modal-overlay').remove();
                 this.render();
@@ -5919,6 +5929,7 @@ migrateData(fromVersion, toVersion) {
                             callback: () => {
                                 this.kredite = this.kredite.filter(k => k.id !== id);
                                 this.saveData('kredite', this.kredite);
+                                this.markAsChanged();
                                 this.invalidateCache();
                                 this.render();
                                 this.showNotification('Kredit gelöscht', 'success');
