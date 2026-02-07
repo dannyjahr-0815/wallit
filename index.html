@@ -90,11 +90,6 @@ setTimeout(() => {
   return p;
  }
 
- window.ensureXLSX = async () => {
-  if (window.XLSX) return true;
-  return loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
- };
-
  window.ensureChartJS = async () => {
   if (window.Chart) return true;
   return loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js');
@@ -2113,20 +2108,7 @@ body.dark-mode .toast-error{ background: rgba(239,68,68,0.90); }
   fill: #f59e0b;
 }
 
-/* Show FAB ONLY on mobile (max-width: 767px) */
-@media (max-width: 767px) {
-  #fabUpload {
-    display: block !important;
-  }
-}
-
-@media (min-width: 768px) {
-  #fabUpload {
-    display: none !important;
-  }
-}
-
-
+/* FAB sichtbar auf Mobile + Desktop (Visibility wird via JS + Firebase-Status gesteuert) */
 /* ==========================================
   Light Mode: Outlines for KPI tiles (Year overview)
   ========================================== */
@@ -3900,6 +3882,7 @@ details.wallit-accordion{
   <script>
     const icons = {
       download: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>',
+      upload: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>',
       plus: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>',
       trash: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>',
       calendar: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="20" height="20" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>',
@@ -5875,7 +5858,7 @@ migrateData(fromVersion, toVersion) {
       }
 
       performReset() {
-        // Alle Daten zurücksetzen
+        // Alle Daten zurücksetzen (inkl. Haushalt, Benutzer, Standard-Einkommen, Kredite, Vorlagen)
         this.fixkosten = [];
         this.ausgabenAll = {};
         this.einkommenAll = {};
@@ -5883,9 +5866,40 @@ migrateData(fromVersion, toVersion) {
         this.sparkonten = [];
         this.sparraten = [];
         this.kontobewegungen = {};
+        this.kredite = [];
+        this.ausgabenVorlagen = [];
+
+        // 👥 MULTI-USER: Haushalt zurücksetzen
+        this.haushalt = {
+          name: 'Mein Haushalt',
+          erstellt: new Date().toISOString()
+        };
+
+        // Standard: nur "ich"
+        this.benutzer = {
+          'ich': {
+            id: 'ich',
+            name: 'Ich',
+            farbe: '#10b981',
+            emoji: '👤',
+            aktiv: true
+          }
+        };
+
+        // aktiver Benutzer + Standard-Einkommen zurücksetzen
+        this.aktiverBenutzer = 'ich';
+        this.standardEinkommen = {};
+
+        // State / Meta
+        this.currentMonth = new Date().toISOString().slice(0, 7);
         this.lastSync = null;
-        
-        // LocalStorage leeren
+
+        // Flags / Timestamps
+        this.hasUnsavedChanges = false;
+        this.localLastModified = Date.now();
+        this.saveData('lastModified', this.localLastModified);
+
+        // LocalStorage persistieren
         this.saveData('fixkosten', this.fixkosten);
         this.saveData('ausgabenAll', this.ausgabenAll);
         this.saveData('einkommenAll', this.einkommenAll);
@@ -5893,10 +5907,22 @@ migrateData(fromVersion, toVersion) {
         this.saveData('sparkonten', this.sparkonten);
         this.saveData('sparraten', this.sparraten);
         this.saveData('kontobewegungen', this.kontobewegungen);
+        this.saveData('kredite', this.kredite);
+        this.saveData('ausgabenVorlagen', this.ausgabenVorlagen);
+        this.saveData('haushalt', this.haushalt);
+        this.saveData('benutzer', this.benutzer);
+        this.saveData('aktiverBenutzer', this.aktiverBenutzer);
+        this.saveData('standardEinkommen', this.standardEinkommen);
+        this.saveData('currentMonth', this.currentMonth);
         this.saveData('lastSync', this.lastSync);
-        
-        this.showModal('✅ Gelöscht', 
-          'Alle Daten wurden erfolgreich gelöscht!',
+
+        // Cache/Charts/UI
+        try { this.invalidateCache?.(); } catch(e) {}
+        try { this.clearCache?.(); } catch(e) {}
+        try { this.updateFAB?.(); } catch(e) {}
+
+        this.showModal('✅ Gelöscht',
+          'Alle Daten wurden vollständig zurückgesetzt!',
           [{ text: 'OK', class: 'bg-green-500 hover:bg-green-600 text-white', callback: () => this.render() }]
         );
       }
@@ -9116,53 +9142,234 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
         };
       }
 
-      exportToExcel() {
-        // Lazy-load XLSX only when exporting
-        if (typeof XLSX === "undefined") {
-          try { await (window.ensureXLSX?.() || Promise.resolve()); } catch(e) {
-            this.showNotification("Excel-Export nicht verfügbar (XLSX konnte nicht geladen werden).", "error");
-            return;
+      
+      exportToCSV() {
+        const keys = [
+          'fixkosten',
+          'ausgabenAll',
+          'einkommenAll',
+          'zusatzeinkommenAll',
+          'sparkonten',
+          'sparraten',
+          'kontobewegungen',
+          'kredite',
+          'ausgabenVorlagen',
+          'haushalt',
+          'benutzer',
+          'aktiverBenutzer',
+          'standardEinkommen',
+          'currentMonth'
+        ];
+
+        const meta = {
+          app: 'wallit',
+          format: 'wallit-csv-v1',
+          exportedAt: new Date().toISOString(),
+          dataVersion: (typeof DATA_VERSION !== 'undefined' ? DATA_VERSION : (this.dataVersion || 1)),
+          userId: this.userId
+        };
+
+        const rows = [['key', 'value']];
+        rows.push(['__meta', JSON.stringify(meta)]);
+
+        for (const k of keys) {
+          try {
+            // Prefer current in-memory state (single source of truth)
+            const v = (k === 'currentMonth') ? this.currentMonth : this[k];
+            rows.push([k, JSON.stringify(v ?? null)]);
+          } catch (e) {
+            rows.push([k, JSON.stringify(null)]);
           }
         }
-        const wb = XLSX.utils.book_new();
-        
-        const fixkostenWS = XLSX.utils.json_to_sheet(this.fixkosten);
-        XLSX.utils.book_append_sheet(wb, fixkostenWS, 'Fixkosten');
-        
-        const allAusgaben = [];
-        Object.keys(this.ausgabenAll).forEach(month => {
-          this.ausgabenAll[month].forEach(a => {
-            allAusgaben.push({ Monat: month, ...a });
-          });
-        });
-        if (allAusgaben.length > 0) {
-          const ausgabenWS = XLSX.utils.json_to_sheet(allAusgaben);
-          XLSX.utils.book_append_sheet(wb, ausgabenWS, 'Ausgaben');
-        }
-        
-        const allZusatz = [];
-        Object.keys(this.zusatzeinkommenAll).forEach(month => {
-          this.zusatzeinkommenAll[month].forEach(z => {
-            allZusatz.push({ Monat: month, ...z });
-          });
-        });
-        if (allZusatz.length > 0) {
-          const zusatzWS = XLSX.utils.json_to_sheet(allZusatz);
-          XLSX.utils.book_append_sheet(wb, zusatzWS, 'Zusatzeinkommen');
-        }
-        
-        if (this.sparkonten.length > 0) {
-          const sparkontenWS = XLSX.utils.json_to_sheet(this.sparkonten);
-          XLSX.utils.book_append_sheet(wb, sparkontenWS, 'Sparkonten');
-        }
-        
-        if (this.sparraten.length > 0) {
-          const sparratenWS = XLSX.utils.json_to_sheet(this.sparraten);
-          XLSX.utils.book_append_sheet(wb, sparratenWS, 'Sparraten');
-        }
-        
-        XLSX.writeFile(wb, `Finanzmanager_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+        const csv = this._toCSV(rows);
+        const safeDate = meta.exportedAt.slice(0, 10);
+        this._downloadText(csv, `wallit_export_${safeDate}.csv`, 'text/csv;charset=utf-8');
+        this.showNotification('CSV Export erstellt.', 'success');
       }
+
+      openCSVImport() {
+        const input = document.getElementById('csvImportInput');
+        if (!input) {
+          this.showNotification('CSV-Import nicht verfügbar (Datei-Input fehlt).', 'error');
+          return;
+        }
+        input.click();
+      }
+
+      async handleCSVImport(event) {
+        const file = event?.target?.files?.[0];
+        if (!file) return;
+        try {
+          await this.importFromCSV(file);
+        } finally {
+          // reset so same file can be picked again
+          event.target.value = '';
+        }
+      }
+
+      async importFromCSV(file) {
+        const text = await file.text();
+        const rows = this._parseCSV(text);
+        if (!rows || rows.length < 2) {
+          this.showNotification('CSV-Import fehlgeschlagen (Datei leer/ungültig).', 'error');
+          return;
+        }
+
+        // header mapping
+        const header = rows[0].map(h => String(h || '').trim().toLowerCase());
+        const keyIdx = header.indexOf('key');
+        const valIdx = header.indexOf('value');
+        if (keyIdx === -1 || valIdx === -1) {
+          this.showNotification('CSV-Import fehlgeschlagen (Spalten key/value fehlen).', 'error');
+          return;
+        }
+
+        const map = new Map();
+        for (let r = 1; r < rows.length; r++) {
+          const k = rows[r][keyIdx];
+          const v = rows[r][valIdx];
+          if (!k) continue;
+          map.set(String(k).trim(), String(v ?? '').trim());
+        }
+
+        // Basic validation
+        const metaRaw = map.get('__meta');
+        if (!metaRaw) {
+          this.showNotification('CSV-Import fehlgeschlagen (__meta fehlt).', 'error');
+          return;
+        }
+
+        let meta = null;
+        try { meta = JSON.parse(metaRaw); } catch (e) {}
+        if (!meta || meta.app !== 'wallit' || !String(meta.format || '').startsWith('wallit-csv')) {
+          this.showNotification('CSV-Import fehlgeschlagen (kein Wallit-Export).', 'error');
+          return;
+        }
+
+        const apply = (key, value) => {
+          this.saveData(key, value);
+          if (key === 'currentMonth') {
+            this.currentMonth = value;
+          } else {
+            this[key] = value;
+          }
+        };
+
+        const keysToImport = [
+          'fixkosten',
+          'ausgabenAll',
+          'einkommenAll',
+          'zusatzeinkommenAll',
+          'sparkonten',
+          'sparraten',
+          'kontobewegungen',
+          'kredite',
+          'ausgabenVorlagen',
+          'haushalt',
+          'benutzer',
+          'aktiverBenutzer',
+          'standardEinkommen',
+          'currentMonth'
+        ];
+
+        for (const k of keysToImport) {
+          if (!map.has(k)) continue;
+          try {
+            const parsed = JSON.parse(map.get(k));
+            apply(k, parsed);
+          } catch (e) {
+            // ignore malformed keys but keep going
+          }
+        }
+
+        // Ensure critical migrations/consistency
+        try { this.migrateToMultiUser?.(); } catch (e) {}
+        try { this.ensureDataIntegrity?.(); } catch (e) {}
+
+        this.showNotification('CSV importiert. App wurde aktualisiert.', 'success');
+
+        // Full rerender + refresh charts
+        this.clearCache?.();
+        this.render();
+        try { this.updateAllCharts?.(); } catch (e) {}
+      }
+
+      _downloadText(text, filename, mime) {
+        const blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      }
+
+      _toCSV(rows) {
+        const esc = (v) => {
+          const s = String(v ?? '');
+          const needs = /[",\n\r;]/.test(s);
+          const out = s.replace(/"/g, '""');
+          return needs ? `"${out}"` : out;
+        };
+        return rows.map(r => r.map(esc).join(',')).join('\n');
+      }
+
+      _parseCSV(text) {
+        // RFC4180-ish parser with delimiter autodetect (',' vs ';')
+        const sample = text.split(/\r?\n/, 1)[0] || '';
+        const delim = (sample.split(';').length > sample.split(',').length) ? ';' : ',';
+
+        const rows = [];
+        let row = [];
+        let cur = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < text.length; i++) {
+          const ch = text[i];
+
+          if (inQuotes) {
+            if (ch === '"') {
+              if (text[i + 1] === '"') { cur += '"'; i++; }
+              else { inQuotes = false; }
+            } else {
+              cur += ch;
+            }
+            continue;
+          }
+
+          if (ch === '"') { inQuotes = true; continue; }
+
+          if (ch === delim) {
+            row.push(cur);
+            cur = '';
+            continue;
+          }
+
+          if (ch === '\n') {
+            row.push(cur);
+            cur = '';
+            rows.push(row);
+            row = [];
+            continue;
+          }
+
+          if (ch === '\r') continue;
+
+          cur += ch;
+        }
+
+        // last field
+        row.push(cur);
+        rows.push(row);
+
+        // trim empty trailing rows
+        while (rows.length && rows[rows.length - 1].every(c => String(c || '').trim() === '')) rows.pop();
+        return rows;
+      }
+
 
       createCharts() {
         // 🚀 PERF: debounce + rAF instead of setTimeout
@@ -9697,9 +9904,13 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
                         <span style="display: flex; align-items: center;">${icons.refresh}</span>
                         <span>Laden</span>
                       </button>
-                      <button onclick="app.exportToExcel()" class="btn-export text-white font-semibold text-sm transition-all flex items-center justify-center" style="padding: var(--space-3); gap: var(--space-1); border-radius: var(--radius-md);">
+                      <button onclick="app.exportToCSV()" class="btn-export text-white font-semibold text-sm transition-all flex items-center justify-center" style="padding: var(--space-3); gap: var(--space-1); border-radius: var(--radius-md);">
                         <span style="display: flex; align-items: center;">${icons.download}</span>
-                        <span>Excel Export</span>
+                        <span>CSV Export</span>
+                      </button>
+<button onclick="app.openCSVImport()" class="btn-download text-white font-semibold text-sm transition-all flex items-center justify-center" style="padding: var(--space-3); gap: var(--space-1); border-radius: var(--radius-md);">
+                        <span style="display: flex; align-items: center;">${icons.upload}</span>
+                        <span>CSV Import</span>
                       </button>
                       <button onclick="app.resetAllData()" class="btn-reset text-white font-semibold text-sm transition-all flex items-center justify-center" style="padding: var(--space-3); gap: var(--space-1); border-radius: var(--radius-md);">
                         <span style="display: flex; align-items: center;">${icons.trash}</span>
@@ -9709,48 +9920,72 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
                   </div>
                 </div>
 
-                <!-- Desktop: Original Layout -->
-                <div class="hidden md:flex items-center justify-between flex-wrap gap-4">
-                  <div class="flex items-center gap-3">
-                    <div class="text-indigo-600">${icons.cloud}</div>
-                    <div>
-                      <div class="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <span>Cloud Synchronisation</span>
-                        ${!window.firebaseReady ? '<span class="flex items-center gap-1 text-red-500 kpi-sub ml-2">' + icons.alertTriangle + '<span>Nicht verfügbar in Safari</span></span>' : '<span class="flex items-center gap-1 text-green-500 kpi-sub ml-2"><span>Aktiv</span>' + icons.check + '</span>'}
+                <!-- Desktop: Accordion Layout (wie Mobile) -->
+                <details class="wallit-accordion hidden md:block mt-6 mb-6">
+                  <summary class="accordion-summary">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="text-indigo-600 flex-shrink-0">${icons.cloud}</div>
+                      <div class="wallit-accordion__title">Cloud & Export</div>
+                      <div class="wallit-accordion__meta">
+                        ${window.firebaseReady
+                          ? '<span class="flex items-center gap-1 text-green-600 kpi-sub">' + icons.check + '<span>Aktiv</span></span>'
+                          : '<span class="flex items-center gap-1 text-orange-600 kpi-sub">' + icons.alertTriangle + '<span>Browser prüfen</span></span>'}
                       </div>
-                      <div class="kpi-sub text-[color:var(--text-tertiary)] flex items-center gap-2">
-                        <span>User ID: ${this.userId.substring(0, 20)}...</span>
-                        <button onclick="app.copyUserId()" class="action-btn-small action-btn-primary" title="URL mit User-ID kopieren">
-                          ${icons.clipboard} URL
-                        </button>
-                        <button onclick="app.changeUserId()" class="action-btn-small action-btn-warning" title="User-ID ändern">
-                          ${icons.key} Ändern
-                        </button>
+                    </div>
+                    <svg class="wallit-accordion__chev" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </summary>
+                  <div class="wallit-accordion__body">
+                    <div class="wallit-accordion-item">
+                      <div class="flex items-center justify-between flex-wrap gap-4">
+                        <div class="flex items-center gap-3">
+                          <div class="text-indigo-600">${icons.cloud}</div>
+                          <div>
+                            <div class="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                              <span>Cloud Synchronisation</span>
+                              ${!window.firebaseReady ? '<span class="flex items-center gap-1 text-red-500 kpi-sub ml-2">' + icons.alertTriangle + '<span>Nicht verfügbar in Safari</span></span>' : '<span class="flex items-center gap-1 text-green-500 kpi-sub ml-2"><span>Aktiv</span>' + icons.check + '</span>'}
+                            </div>
+                            <div class="kpi-sub text-[color:var(--text-tertiary)] flex items-center gap-2">
+                              <span>User ID: ${this.userId.substring(0, 20)}...</span>
+                              <button onclick="app.copyUserId()" class="action-btn-small action-btn-primary" title="URL mit User-ID kopieren">
+                                ${icons.clipboard} URL
+                              </button>
+                              <button onclick="app.changeUserId()" class="action-btn-small action-btn-warning" title="User-ID ändern">
+                                ${icons.key} Ändern
+                              </button>
+                            </div>
+                            ${!this.localStorageWorks ? '<div class="flex items-center gap-2 kpi-sub text-orange-600 font-semibold mt-1">' + icons.lightbulb + ' <span>Tipp: Setze ein LESEZEICHEN - User-ID bleibt in URL!</span></div>' : ''}
+                            ${this.lastSync ? `<div class="kpi-sub text-indigo-600">Letzte Sync: ${new Date(this.lastSync).toLocaleString('de-DE')}</div>` : ''}
+                            ${!window.firebaseReady ? '<div class="kpi-sub text-orange-600 mt-1">Nutze Chrome/Firefox für Cloud-Sync oder speichere lokal</div>' : ''}
+                          </div>
+                        </div>
+                        <div class="flex gap-2 flex-wrap">
+                          <button onclick="app.syncToCloud()" class="btn-upload px-4 py-2 text-white rounded-lg font-semibold transition-all flex items-center gap-2 ${this.isSyncing ? 'opacity-50 cursor-not-allowed' : ''}" ${this.isSyncing ? 'disabled' : ''}>
+                            <span class="${this.isSyncing ? 'sync-animation' : ''}" style="display: flex; align-items: center;">${icons.cloud}</span>
+                            <span>${this.isSyncing ? 'Syncing...' : 'Hochladen'}</span>
+                          </button>
+                          <button onclick="app.loadFromCloud()" class="btn-download px-4 py-2 text-white rounded-lg font-semibold transition-all flex items-center gap-2" ${this.isSyncing ? 'disabled' : ''}>
+                            <span style="display: flex; align-items: center;">${icons.refresh}</span>
+                            <span>Laden</span>
+                          </button>
+                          <button onclick="app.exportToCSV()" class="btn-export px-4 py-2 text-white rounded-lg font-semibold transition-all flex items-center gap-2">
+                            <span style="display: flex; align-items: center;">${icons.download}</span>
+                            <span>CSV Export</span>
+                          </button>
+                          <button onclick="app.openCSVImport()" class="btn-download px-4 py-2 text-white rounded-lg font-semibold transition-all flex items-center gap-2">
+                            <span style="display: flex; align-items: center;">${icons.upload}</span>
+                            <span>CSV Import</span>
+                          </button>
+                          <button onclick="app.resetAllData()" class="btn-reset px-4 py-2 text-white rounded-lg font-semibold transition-all flex items-center gap-2">
+                            <span style="display: flex; align-items: center;">${icons.trash}</span>
+                            <span>Alles zurücksetzen</span>
+                          </button>
+                        </div>
                       </div>
-                      ${!this.localStorageWorks ? '<div class="flex items-center gap-2 kpi-sub text-orange-600 font-semibold mt-1">' + icons.lightbulb + ' <span>Tipp: Setze ein LESEZEICHEN - User-ID bleibt in URL!</span></div>' : ''}
-                      ${this.lastSync ? `<div class="kpi-sub text-indigo-600">Letzte Sync: ${new Date(this.lastSync).toLocaleString('de-DE')}</div>` : ''}
-                      ${!window.firebaseReady ? '<div class="kpi-sub text-orange-600 mt-1">Nutze Chrome/Firefox für Cloud-Sync oder speichere lokal</div>' : ''}
                     </div>
                   </div>
-                  <div class="flex gap-2 flex-wrap">
-                    <button onclick="app.syncToCloud()" class="btn-upload px-4 py-2 text-white rounded-lg font-semibold transition-all flex items-center gap-2 ${this.isSyncing ? 'opacity-50 cursor-not-allowed' : ''}" ${this.isSyncing ? 'disabled' : ''}>
-                      <span class="${this.isSyncing ? 'sync-animation' : ''}" style="display: flex; align-items: center;">${icons.cloud}</span>
-                      <span>${this.isSyncing ? 'Syncing...' : 'Hochladen'}</span>
-                    </button>
-                    <button onclick="app.loadFromCloud()" class="btn-download px-4 py-2 text-white rounded-lg font-semibold transition-all flex items-center gap-2" ${this.isSyncing ? 'disabled' : ''}>
-                      <span style="display: flex; align-items: center;">${icons.refresh}</span>
-                      <span>Laden</span>
-                    </button>
-                    <button onclick="app.exportToExcel()" class="btn-export px-4 py-2 text-white rounded-lg font-semibold transition-all flex items-center gap-2">
-                      <span style="display: flex; align-items: center;">${icons.download}</span>
-                      <span>Excel Export</span>
-                    </button>
-                    <button onclick="app.resetAllData()" class="btn-reset px-4 py-2 text-white rounded-lg font-semibold transition-all flex items-center gap-2">
-                      <span style="display: flex; align-items: center;">${icons.trash}</span>
-                      <span>Alles zurücksetzen</span>
-                    </button>
-                  </div>
-                </div>
+                </details>
               </div>
 
               <!-- 👥 USER TABS - Haushalt Navigation -->
@@ -11865,7 +12100,7 @@ window.app = new FinanceManagerCloud();
     }, 100);
   </script>
   
-  <!-- Floating Action Button for Quick Cloud Upload (Mobile Only) -->
+  <!-- Floating Action Button for Quick Cloud Upload (Mobile + Desktop) -->
   <div id="fabUpload" onclick="app.performSync()" title="In Cloud hochladen" style="position: fixed; top: 16px; right: 16px; width: 56px; height: 56px; cursor: pointer; display: none; z-index: 9999;">
     <svg width="56" height="56" viewBox="0 0 56 56" style="filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));">
       <circle cx="28" cy="28" r="28" fill="#10b981"/>
@@ -12752,6 +12987,10 @@ if(beschreibung && m.merchant) beschreibung.value = m.merchant;
  rsSetState(RS_STATE.IDLE, "");
 })();
 </script>
+
+
+  <!-- CSV Import (hidden) -->
+  <input id="csvImportInput" type="file" accept=".csv,text/csv" class="hidden" onchange="app.handleCSVImport(event)" />
 
 </body>
 </html>
