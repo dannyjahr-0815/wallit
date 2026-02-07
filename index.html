@@ -45,23 +45,22 @@
     container.appendChild(toast);
     document.body.appendChild(container);
 
-    
-// --- v15.1 hotfix: missing instance helper used by year view templates ---
-if (typeof FinanceManagerCloud !== 'undefined' && !FinanceManagerCloud.prototype.escapeHtml) {
-  FinanceManagerCloud.prototype.escapeHtml = function (value) {
-    const s = String(value ?? '');
-    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-    return s.replace(/[&<>"']/g, (ch) => map[ch]);
-  };
-}
-// --- end hotfix ---
-
-setTimeout(() => {
+    setTimeout(() => {
       container.style.opacity = "0";
       container.style.transition = "opacity 0.25s ease";
       setTimeout(() => container.remove(), 260);
     }, 2600);
   };
+
+  // --- v15.1 hotfix: missing instance helper used by year view templates ---
+  if (typeof FinanceManagerCloud !== 'undefined' && !FinanceManagerCloud.prototype.escapeHtml) {
+    FinanceManagerCloud.prototype.escapeHtml = function (value) {
+      const s = String(value ?? '');
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+      return s.replace(/[&<>"']/g, (ch) => map[ch]);
+    };
+  }
+  // --- end hotfix ---
 })();
 
 </script>
@@ -1847,6 +1846,9 @@ setTimeout(() => {
       gap: var(--space-3);
       border-radius: var(--radius-lg);
       transition: var(--transition-base);
+      cursor: pointer;
+      border: none;
+      background: transparent;
     }
 
     /* ==========================================
@@ -8005,21 +8007,20 @@ getGesamtKreditlast() {
         };
       }
 
-      getDashboardStats() {
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = `${currentYear}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        const lastMonth = `${now.getMonth() === 0 ? currentYear - 1 : currentYear}-${String(now.getMonth() === 0 ? 12 : now.getMonth()).padStart(2, '0')}`;
+      getDashboardStats(monthKey = this.currentMonth) {
+        const currentMonth = monthKey;
+        const [cy, cm] = currentMonth.split('-').map(Number);
+        const prev = new Date(cy, cm - 2, 1);
+        const lastMonth = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}`;
         
         const currentStats = this.getMonthStats(currentMonth);
         const lastStats = this.getMonthStats(lastMonth);
         
-        const yearlyStats = this.calculateYearStats(currentYear);
+        const yearlyStats = this.calculateYearStats(this.currentYear);
         const prognosis = this.calculateYearPrognosis();
         
         // Gesamtvermögen (Sparkonten)
-        const totalAssets = this.sparkonten.reduce((sum, k) => sum + k.aktuellerStand, 0);
-        
+        const totalAssets = this.sparkonten.reduce((sum, k) => sum + (this.getKontostandForMonth(k.id, currentMonth) || 0), 0);
         return {
           current: currentStats,
           last: lastStats,
@@ -8318,7 +8319,7 @@ getGesamtKreditlast() {
         
         this.showModal(
           '⚠️ Sparkonto löschen?',
-          `Möchtest du dieses Sparkonto wirklich löschen?\n\n${konto.name} (${konto.typ})\nAktueller Stand: ${this.formatCurrency(konto.aktuellerStand)}\n\n⚠️ Es werden auch gelöscht:\n• ${bewegungenCount} Bewegung(en)\n• ${sparratenCount} Sparrate(n)`,
+          `Möchtest du dieses Sparkonto wirklich löschen?\n\n${konto.name} (${konto.typ})\nAktueller Stand: ${this.formatCurrency(monthStand)}\n\n⚠️ Es werden auch gelöscht:\n• ${bewegungenCount} Bewegung(en)\n• ${sparratenCount} Sparrate(n)`,
           [
             { text: 'Abbrechen', class: 'bg-gray-300 text-gray-700' },
             {
@@ -8546,6 +8547,127 @@ getGesamtKreditlast() {
         });
         return summe;
       }
+
+
+_parseDateFlexible(value) {
+  // Accepts: YYYY-MM-DD, YYYY-MM, DD.MM.YYYY, DD/MM/YYYY
+  if (!value) return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+  const s = String(value).trim();
+  let m;
+  if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
+    return new Date(parseInt(m[1],10), parseInt(m[2],10)-1, parseInt(m[3],10));
+  }
+  if ((m = s.match(/^(\d{4})-(\d{2})$/))) {
+    return new Date(parseInt(m[1],10), parseInt(m[2],10)-1, 1);
+  }
+  if ((m = s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/))) {
+    return new Date(parseInt(m[3],10), parseInt(m[2],10)-1, parseInt(m[1],10));
+  }
+  if ((m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/))) {
+    return new Date(parseInt(m[3],10), parseInt(m[2],10)-1, parseInt(m[1],10));
+  }
+  const d = new Date(s);
+  if (!Number.isNaN(d.getTime())) return d;
+  return null;
+}
+
+_monthKeyFromDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+_parseMonthKey(monthKey) {
+  const mm = String(monthKey || '').match(/^(\d{4})-(\d{2})$/);
+  if (!mm) return null;
+  return { y: parseInt(mm[1],10), m: parseInt(mm[2],10) }; // m: 1..12
+}
+
+_addMonths(y, m, delta) {
+  let yy = y, mm = m + delta;
+  while (mm > 12) { mm -= 12; yy += 1; }
+  while (mm < 1) { mm += 12; yy -= 1; }
+  return { y: yy, m: mm };
+}
+
+_monthDiffInclusive(aY, aM, bY, bM) {
+  const diff = (bY - aY) * 12 + (bM - aM);
+  return diff >= 0 ? diff + 1 : 0;
+}
+
+getKontostandAtMonth(kontoId, monthKey) {
+  // IST-Stand: Summe aller Bewegungen bis Monatsende
+  const ym = this._parseMonthKey(monthKey);
+  if (!ym) return 0;
+  const end = new Date(ym.y, ym.m, 0, 23, 59, 59, 999); // ym.m is 1..12, day 0 => last day prev month => correct for month
+  const list = this.kontobewegungen[kontoId] || [];
+  let stand = 0;
+  for (const b of (list || [])) {
+    if (!b) continue;
+    const d = this._parseDateFlexible(b.datum);
+    if (!d) continue;
+    if (d > end) continue;
+    const betrag = Number(b.betrag) || 0;
+    if (b.typ === 'einzahlung') stand += betrag;
+    else stand -= betrag;
+  }
+  return stand;
+}
+
+getLastActualMonthKeyForKonto(kontoId) {
+  // letzter IST-Monat anhand vorhandener Bewegungen (pro Konto)
+  const list = this.kontobewegungen[kontoId] || [];
+  let last = null;
+  for (const b of (list || [])) {
+    if (!b) continue;
+    const d = this._parseDateFlexible(b.datum);
+    if (!d) continue;
+    const key = this._monthKeyFromDate(d);
+    if (!last || key > last) last = key;
+  }
+  return last; // "YYYY-MM" oder null
+}
+
+getKontostandForMonth(kontoId, monthKey) {
+  // Modell: Januar/IST ist vollständig (Bewegungen eingetragen). Projektion startet ab Monat NACH dem letzten IST-Monat pro Konto.
+  const ist = this.getKontostandAtMonth(kontoId, monthKey);
+  const lastActual = this.getLastActualMonthKeyForKonto(kontoId);
+  if (!lastActual) return ist;
+  if (String(monthKey) <= String(lastActual)) return ist;
+
+  const la = this._parseMonthKey(lastActual);
+  const sel = this._parseMonthKey(monthKey);
+  if (!la || !sel) return ist;
+
+  const projStart = this._addMonths(la.y, la.m, 1);
+  const projStartKey = `${projStart.y}-${String(projStart.m).padStart(2,'0')}`;
+
+  let proj = 0;
+  for (const r of (this.sparraten || [])) {
+    if (!r || r.aktiv === false) continue;
+    if (String(r.kontoId || r.konto || '') !== String(kontoId)) continue;
+
+    const amt = Number(r.betrag) || 0;
+    if (!amt) continue;
+
+    const interval = String(r.intervall || 'monatlich').toLowerCase();
+    let monthly = amt;
+    if (interval.includes('quart')) monthly = amt / 3;
+    else if (interval.includes('jahr')) monthly = amt / 12;
+
+    const sd = this._parseDateFlexible(r.startDatum || r.startDate || r.datum);
+    if (!sd) continue;
+    const startKey = this._monthKeyFromDate(sd);
+
+    const effKey = startKey > projStartKey ? startKey : projStartKey;
+    const eff = this._parseMonthKey(effKey);
+    if (!eff) continue;
+
+    const months = this._monthDiffInclusive(eff.y, eff.m, sel.y, sel.m);
+    proj += monthly * months;
+  }
+
+  return ist + proj;
+}
 
       changeMonth(delta) {
         const [year, month] = this.currentMonth.split('-').map(Number);
@@ -10046,19 +10168,19 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
                   <div class="sidebar-nav-container bg-white rounded-2xl border border-gray-100 shadow-sm sticky top-6 panel-card">
                     <div class="sidebar-nav-title kpi-sub font-semibold text-[color:var(--text-tertiary)]">Navigation</div>
                     <div class="sidebar-nav-list">
-                      <button onclick="app.setTab('dashboard')" class="sidebar-nav-button w-full flex items-center font-bold transition-all shadow-sm ${this.activeTab === 'dashboard' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
+                      <button type="button" onclick="app.setTab('dashboard')" class="sidebar-nav-button w-full flex items-center font-bold transition-all shadow-sm ${this.activeTab === 'dashboard' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
                         ${icons.barChart} <span>Dashboard</span>
                       </button>
-                      <button onclick="app.setTab('month')" class="sidebar-nav-button w-full flex items-center font-bold transition-all shadow-sm ${this.activeTab === 'month' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
+                      <button type="button" onclick="app.setTab('month')" class="sidebar-nav-button w-full flex items-center font-bold transition-all shadow-sm ${this.activeTab === 'month' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
                         ${icons.calendar} <span>Monat</span>
                       </button>
-                      <button onclick="app.setTab('year')" class="sidebar-nav-button w-full flex items-center font-bold transition-all shadow-sm ${this.activeTab === 'year' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
+                      <button type="button" onclick="app.setTab('year')" class="sidebar-nav-button w-full flex items-center font-bold transition-all shadow-sm ${this.activeTab === 'year' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
                         ${icons.trending} <span>Jahr</span>
                       </button>
-                      <button onclick="app.setTab('investments')" class="sidebar-nav-button w-full flex items-center font-bold transition-all shadow-sm ${this.activeTab === 'investments' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
+                      <button type="button" onclick="app.setTab('investments')" class="sidebar-nav-button w-full flex items-center font-bold transition-all shadow-sm ${this.activeTab === 'investments' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
                         ${icons.piggyBank} <span>Anlagen</span>
                       </button>
-                      <button onclick="app.setTab('stammdaten')" class="sidebar-nav-button w-full flex items-center font-bold transition-all shadow-sm ${this.activeTab === 'stammdaten' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
+                      <button type="button" onclick="app.setTab('stammdaten')" class="sidebar-nav-button w-full flex items-center font-bold transition-all shadow-sm ${this.activeTab === 'stammdaten' ? 'tab-active' : 'tab-inactive hover:shadow-md'}">
                         ${icons.settings} <span>Stammdaten</span>
                       </button>
                     </div>
@@ -10070,19 +10192,19 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
                 <div class="flex-1 min-w-0">
                   <!-- Mobile Tabs Row - HIDDEN (Bottom Nav ersetzt diese) -->
                   <div class="hidden">
-                    <button onclick="app.setTab('dashboard')" class="flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-md ${this.activeTab === 'dashboard' ? 'tab-active' : 'tab-inactive hover:shadow-lg'}">
+                    <button type="button" onclick="app.setTab('dashboard')" class="flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-md ${this.activeTab === 'dashboard' ? 'tab-active' : 'tab-inactive hover:shadow-lg'}">
                       ${icons.barChart} <span>Dashboard</span>
                     </button>
-                    <button onclick="app.setTab('month')" class="flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-md ${this.activeTab === 'month' ? 'tab-active' : 'tab-inactive hover:shadow-lg'}">
+                    <button type="button" onclick="app.setTab('month')" class="flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-md ${this.activeTab === 'month' ? 'tab-active' : 'tab-inactive hover:shadow-lg'}">
                       ${icons.calendar} <span>Monat</span>
                     </button>
-                    <button onclick="app.setTab('year')" class="flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-md ${this.activeTab === 'year' ? 'tab-active' : 'tab-inactive hover:shadow-lg'}">
+                    <button type="button" onclick="app.setTab('year')" class="flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-md ${this.activeTab === 'year' ? 'tab-active' : 'tab-inactive hover:shadow-lg'}">
                       ${icons.trending} <span>Jahr</span>
                     </button>
-                    <button onclick="app.setTab('investments')" class="flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-md ${this.activeTab === 'investments' ? 'tab-active' : 'tab-inactive hover:shadow-lg'}">
+                    <button type="button" onclick="app.setTab('investments')" class="flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-md ${this.activeTab === 'investments' ? 'tab-active' : 'tab-inactive hover:shadow-lg'}">
                       ${icons.piggyBank} <span>Anlagen</span>
                     </button>
-                    <button onclick="app.setTab('stammdaten')" class="flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-md ${this.activeTab === 'stammdaten' ? 'tab-active' : 'tab-inactive hover:shadow-lg'}">
+                    <button type="button" onclick="app.setTab('stammdaten')" class="flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-md ${this.activeTab === 'stammdaten' ? 'tab-active' : 'tab-inactive hover:shadow-lg'}">
                       ${icons.settings} <span>Stammdaten</span>
                     </button>
                   </div>
@@ -10101,23 +10223,23 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
 
           <!-- Mobile Bottom Navigation -->
           <nav class="bottom-nav md:hidden" aria-label="Hauptnavigation">
-            <button onclick="app.setTab('dashboard')" class="bn-item ${this.activeTab === 'dashboard' ? 'bn-active' : ''}" aria-label="Dashboard">
+            <button type="button" onclick="app.setTab('dashboard')" class="bn-item ${this.activeTab === 'dashboard' ? 'bn-active' : ''}" aria-label="Dashboard">
               ${icons.barChart}
               <span class="bn-label">Dash</span>
             </button>
-            <button onclick="app.setTab('month')" class="bn-item ${this.activeTab === 'month' ? 'bn-active' : ''}" aria-label="Monat">
+            <button type="button" onclick="app.setTab('month')" class="bn-item ${this.activeTab === 'month' ? 'bn-active' : ''}" aria-label="Monat">
               ${icons.calendar}
               <span class="bn-label">Monat</span>
             </button>
-            <button onclick="app.setTab('year')" class="bn-item ${this.activeTab === 'year' ? 'bn-active' : ''}" aria-label="Jahr">
+            <button type="button" onclick="app.setTab('year')" class="bn-item ${this.activeTab === 'year' ? 'bn-active' : ''}" aria-label="Jahr">
               ${icons.trending}
               <span class="bn-label">Jahr</span>
             </button>
-            <button onclick="app.setTab('investments')" class="bn-item ${this.activeTab === 'investments' ? 'bn-active' : ''}" aria-label="Anlagen">
+            <button type="button" onclick="app.setTab('investments')" class="bn-item ${this.activeTab === 'investments' ? 'bn-active' : ''}" aria-label="Anlagen">
               ${icons.piggyBank}
               <span class="bn-label">Anlagen</span>
             </button>
-            <button onclick="app.setTab('stammdaten')" class="bn-item ${this.activeTab === 'stammdaten' ? 'bn-active' : ''}" aria-label="Stammdaten">
+            <button type="button" onclick="app.setTab('stammdaten')" class="bn-item ${this.activeTab === 'stammdaten' ? 'bn-active' : ''}" aria-label="Stammdaten">
               ${icons.settings}
               <span class="bn-label">Data</span>
             </button>
@@ -10210,11 +10332,12 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
               
             </div>
           </div>
+          </div>
         `;
       }
 
       renderDashboard() {
-        const dash = this.getDashboardStats();
+        const dash = this.getDashboardStats(this.currentMonth);
         const [year, month] = this.currentMonth.split('-').map(Number);
         const monthName = new Date(this.currentMonth + '-01').toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
         
@@ -10222,13 +10345,13 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
           <div class="space-y-6">
             <!-- Monats-Navigation -->
             <div class="flex items-center justify-center gap-4 bg-white p-4 rounded-xl shadow-md border border-gray-200">
-              <button onclick="app.changeMonth(-1)" class="p-3 hover:bg-gray-100 rounded-lg transition-colors text-gray-700">
+              <button type="button" onclick="app.changeMonth(-1)" class="p-3 hover:bg-gray-100 rounded-lg transition-colors text-gray-700">
                 ${icons.chevronLeft}
               </button>
               <div class="kpi-value month-nav-title text-[color:var(--text-primary)] min-w-[200px] sm:min-w-[280px] text-center">
                 ${monthName}
               </div>
-              <button onclick="app.changeMonth(1)" class="p-3 hover:bg-gray-100 rounded-lg transition-colors text-gray-700">
+              <button type="button" onclick="app.changeMonth(1)" class="p-3 hover:bg-gray-100 rounded-lg transition-colors text-gray-700">
                 ${icons.chevronRight}
               </button>
             </div>
@@ -10555,13 +10678,13 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
         
         return `
           <div class="flex items-center justify-center gap-4 mb-6 bg-white p-4 rounded-xl shadow-md border border-gray-200">
-            <button onclick="app.changeMonth(-1)" class="p-3 hover:bg-gray-100 rounded-lg transition-colors text-gray-700">
+            <button type="button" onclick="app.changeMonth(-1)" class="p-3 hover:bg-gray-100 rounded-lg transition-colors text-gray-700">
               ${icons.chevronLeft}
             </button>
             <div class="kpi-value month-nav-title text-[color:var(--text-primary)] min-w-[200px] sm:min-w-[280px] text-center">
               ${monthName}
             </div>
-            <button onclick="app.changeMonth(1)" class="p-3 hover:bg-gray-100 rounded-lg transition-colors text-gray-700">
+            <button type="button" onclick="app.changeMonth(1)" class="p-3 hover:bg-gray-100 rounded-lg transition-colors text-gray-700">
               ${icons.chevronRight}
             </button>
           </div>
@@ -10700,7 +10823,7 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
           <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
             <div class="flex items-center justify-between mb-4">
               <h2 class="flex items-center gap-2 text-2xl font-bold text-[color:var(--text-primary)]">${icons.fileText} <span>Ausgaben-Vorlagen</span></h2>
-              <button onclick="app.setTab('stammdaten')" class="text-sm px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors font-semibold">
+              <button type="button" onclick="app.setTab('stammdaten')" class="text-sm px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors font-semibold">
                 Verwalten →
               </button>
             </div>
@@ -11104,11 +11227,25 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
       }
 
       renderInvestmentsView() {
-        const gesamtAnlagen = this.sparkonten.reduce((sum, k) => sum + k.aktuellerStand, 0);
+        const monthName = new Date(this.currentMonth + '-01').toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+        const gesamtAnlagen = this.sparkonten.reduce((sum, k) => sum + (this.getKontostandForMonth(k.id, this.currentMonth) || 0), 0);
         const monatlicheRate = this.getMonatlicheSparraten();
 
         return `
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="space-y-6">
+            <div class="flex items-center justify-center gap-4 mb-6 bg-white p-4 rounded-xl shadow-md border border-gray-200">
+              <button type="button" onclick="app.changeMonth(-1)" class="p-3 hover:bg-gray-100 rounded-lg transition-colors text-gray-700" aria-label="Vorheriger Monat">
+                ${icons.chevronLeft}
+              </button>
+              <div class="kpi-value month-nav-title text-[color:var(--text-primary)] min-w-[200px] sm:min-w-[280px] text-center">
+                ${monthName}
+              </div>
+              <button type="button" onclick="app.changeMonth(1)" class="p-3 hover:bg-gray-100 rounded-lg transition-colors text-gray-700" aria-label="Nächster Monat">
+                ${icons.chevronRight}
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-xl shadow-md border border-indigo-200">
               <div class="flex items-start gap-2 kpi-sub sm:text-sm text-indigo-700 font-semibold mb-1 leading-tight"><span class="w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">${icons.gem}</span> <span class="break-words">Gesamtvermögen</span></div>
               <div class="kpi-value text-indigo-800">${this.formatCurrency(gesamtAnlagen)}</div>
@@ -11159,7 +11296,8 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
               ${this.sparkonten.map(konto => {
                 const bewegungen = this.kontobewegungen[konto.id] || [];
                 const sparraten = this.sparraten.filter(r => r.kontoId === konto.id && r.aktiv);
-                const fortschritt = konto.ziel > 0 ? (konto.aktuellerStand / konto.ziel) * 100 : 0;
+                const monthStand = this.getKontostandForMonth(konto.id, this.currentMonth) || 0;
+                const fortschritt = konto.ziel > 0 ? (monthStand / konto.ziel) * 100 : 0;
                 
                 return `
                   <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
@@ -11200,7 +11338,7 @@ const gesamtEinkommen = einkommen + zusatzeinkommen;
                     
                     <div class="mb-4">
                       <div class="kpi-value mb-1" style="color: ${konto.farbe};">
-                        ${this.formatCurrency(konto.aktuellerStand)}
+                        ${this.formatCurrency(monthStand)}
                       </div>
                       ${konto.ziel > 0 ? `
                         <div class="kpi-sub text-[color:var(--text-tertiary)] mb-2">Ziel: ${this.formatCurrency(konto.ziel)}</div>
@@ -12936,13 +13074,12 @@ async function rsScanNow(){
   const fullText = await rsSendToVision(rsCapturedDataUrl);
 
   if(!fullText) {
- status.textContent = "Keine Daten erkannt. Du kannst die Angaben manuell eingeben.";
- // Speicher freigeben (DataURL kann groß sein)
- rsCapturedDataUrl = null;
- rsEl("rsPreviewImg").src = "";
- rsSetState(RS_STATE.ERROR);
- return;
-}
+    rsSetState(RS_STATE.ERROR, "Keine Daten erkannt. Du kannst die Angaben manuell eingeben.");
+    // Speicher freigeben (DataURL kann groß sein)
+    rsCapturedDataUrl = null;
+    rsEl("rsPreviewImg").src = "";
+    return;
+  }
 
   rsEl("rsStatus").textContent = "Daten werden zugeordnet …";
 
@@ -12971,8 +13108,9 @@ if(beschreibung && m.merchant) beschreibung.value = m.merchant;
   rsSetState(RS_STATE.ERROR, "OCR Fehler: " + (e?.message || String(e)));
  } finally {
   rsOcrInFlight = false;
-  // refresh button states without overriding message
-  rsSetState(rsState);
+  // Keep current state and message, just refresh button states
+  const currentMessage = rsEl("rsStatus").textContent;
+  rsSetState(rsState, currentMessage);
  }
 }
 
